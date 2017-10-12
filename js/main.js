@@ -5,7 +5,8 @@ var engine = new BABYLON.Engine(canvas, true);
 var gameOver = false;
 //create ball
 var ball = {
-    yVelocity : 15
+    yVelocity : 15,
+    radius: 0.5
 };
 //create paddle
 var paddle = {};
@@ -41,8 +42,12 @@ var blocks = {
 var powerups = {
     activePowerups: 0,
     meshes: [],
-    positions: []
+    positions: [],
+    playersPowerups: [],
+    types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]
 };
+
+var score = 0;
 
 /*-----------------------------------------------------------
 *                  SCENE SETUP
@@ -93,7 +98,7 @@ var createScene = function () {
   paddle.mesh.scaling = new BABYLON.Vector3(1, 0.2, 1);
   paddle.mesh.position = new BABYLON.Vector3(0, -4, 0);
 
-  ball.mesh = BABYLON.Mesh.CreateSphere("ball", 16, 0.5, scene);
+  ball.mesh = BABYLON.Mesh.CreateSphere("ball", 16, ball.radius, scene);
   ball.mesh.position = new BABYLON.Vector3(0, -2, 0);
   ball.mesh.material = new BABYLON.StandardMaterial("s-mat", scene);
 
@@ -128,6 +133,7 @@ var createScene = function () {
   setUpPhysicsImposters();
   setUpPendulum();
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), scene);
+  addParticleSystemTo(pendulum.pendulumBall.mesh, new BABYLON.Color4(0.1, 0.8, 0.1, 1.0), new BABYLON.Color4(0.1, 0.8, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), scene);
 
     return scene;
 }
@@ -194,6 +200,10 @@ function setUpPendulum(){
 
 function updatePendulum(){
     pendulum.pendulumBall.mesh.applyImpulse(new BABYLON.Vector3(0.01, 0, 0), ball.mesh.getAbsolutePosition());
+}
+
+function openPendulumBox(){
+    
 }
 
 
@@ -304,6 +314,7 @@ function getRandomNumber(min, max){
             objects.splice(i, 1);         //update array size
             blocks.vacancies[i] = true;   //update vacancy
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
+            score += 100;
         }else{
             objects[i].rotation.y += 0.01;    //rotate the cube
         }
@@ -313,33 +324,36 @@ function getRandomNumber(min, max){
 //spawns a powerup, gives a 1 in 10 chance of a powerup being spawned
 function spawnPowerup(){
     for(var i = 0; i < blocks.vacancies.length; i++){
-        if(blocks.vacancies[i] && getRandomNumber(1, 10) == 2){    //if there is a vacancy and you fall within the chance range
+        if(blocks.vacancies[i] && getRandomNumber(1, 10) <= 2){    //if there is a vacancy and you fall within the chance range
             var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, scene, false);
             powerup.position = blocks.positions[i];     //set the power up position to that of the vacant space
             powerups.meshes.push(powerup);
             powerups.positions[i] = powerup.position;
-            blocks.vacancies[i] = false;        //sapce is no longer vacant
+            blocks.vacancies[i] = false;        //space is no longer vacant
+            if(powerups.playersPowerups.length < 3){    //max of 3 powerups
+                powerups.playersPowerups.push(powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
+            }
         }
+    }
+}
+
+function updateBall(){
+    if(ball.mesh.position.y < -10){     //ball has fallen out of game area
+        gameOver = true;
     }
 }
 
 
 
 //add a block wider than the sphere radius to a distance joint on the sphere so players can hit the ball from straight under
-//create cubes that rotate in columns and rows as the blocks to break
-//add imposters for each cube that increments a score counter
-//create a sphere that is hanging from the top wall as a pendulumn (this is game win condition to hit it)
-//maybe create a json object that saves the position of the blocks and if a space is vacant mayeb put a power up there
 //space bar activates powerups (longer paddle, maybe multiple balls, slow down time for a few seconds)
-//stop paddle when it hits side walls
-//game over condition when ball.position goes below Vec3f (0,0,0);
-//add a score
 //add a replay function (reset function might suffice, maybe make an init function)
-//create a box above the 'topWall' inside the box the sphere with the pendulumn is there,
 //when all boxes have been destroyed a hinge joint lowers the side walls giving access to the end of game item.
 //if the ball gets within the box slow down time, resume normal speed when done
+//clamp camera rotation
 
 var scene = createScene();
+
 //set up actions for scene
 setUpActionManager();
 
@@ -348,12 +362,18 @@ engine.runRenderLoop(function(){
     scene.render();
     if(!gameOver){
         if(blocks.length != 0){
+            updateBall();
             updateBlocks();
             updatePowerups();
             spawnPowerup();
         }else{
             //open up the end game box
+            openPendulumBox();
         }
+    }else{
+        //display gui with score and a replay
+        //gameOver = false;
+        //scene = createScene
     }
 });
 
