@@ -4,7 +4,9 @@ var engine = new BABYLON.Engine(canvas, true);
 
 var gameOver = false;
 //create ball
-var ball = {};
+var ball = {
+    yVelocity : 15
+};
 //create paddle
 var paddle = {};
 
@@ -27,8 +29,20 @@ var pendulum = {
   pendulumBall: {}
 };
 
-//array to hold blocks
-var blocks = [];
+//object for blocks
+var blocks = {
+    activeBlocks: 0,
+    meshes: [],
+    positions: [],
+    vacancies: []
+};
+
+//object for powerups
+var powerups = {
+    activePowerups: 0,
+    meshes: [],
+    positions: []
+};
 
 /*-----------------------------------------------------------
 *                  SCENE SETUP
@@ -99,11 +113,15 @@ var createScene = function () {
   pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
 
   //create blocks
+  var boxNumber = 0;
   for(var i = 0; i < 3; i++){
       for(var j = 0; j < 8; j++){
-          var block = BABYLON.Mesh.CreateBox("block_" + (i+j), 0.5, scene);
+          var block = BABYLON.Mesh.CreateBox("block_" + blocks.activeBlocks++, 0.5, scene, false);
           block.position = new BABYLON.Vector3(-3 + j, 2.5 - i, 0);
-          blocks.push(block);   //add block to blocks array for later collision detection
+          blocks.meshes.push(block);   //add block to blocks array for later collision detection
+          blocks.positions.push(block.position);
+          blocks.vacancies.push(false);
+          boxNumber++;
       }
   }
 
@@ -114,10 +132,11 @@ var createScene = function () {
     return scene;
 }
 
+/*-----------------------------------------------------------
+ *                          PHYSICS
+ * ---------------------------------------------------------*/
 function setUpPhysicsImposters(){
-  /*-----------------------------------------------------------
-   *                          PHYSICS
-   * ---------------------------------------------------------*/
+
   //make physics imposters
   areaWalls.sideWall1.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(areaWalls.sideWall1.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
   areaWalls.sideWall2.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(areaWalls.sideWall2.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
@@ -128,13 +147,12 @@ function setUpPhysicsImposters(){
   pendulum.pendulumBall.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulum.pendulumBall.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 0}, scene);
   paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
   ball.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(ball.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 1}, scene);
-  ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0, 12, 0));
-  //Math.random() * (5 - 1) + 1 use this to make angle at start different
+  ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0, ball.yVelocity, 0));
 
   //collision actions with imposters
   ball.mesh.physicsImpostor.registerOnPhysicsCollide(paddle.mesh.physicsImpostor, function(main, collided) {
       main.object.material.diffuseColor = new BABYLON.Color3(Math.random(), Math.random(), Math.random());
-      ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
+      ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, ball.yVelocity, 0));
   });
 
   ball.mesh.physicsImpostor.registerOnPhysicsCollide(areaWalls.topWall.mesh.physicsImpostor, function(main, collided) {
@@ -173,6 +191,11 @@ function setUpPendulum(){
   pendulum.pendulumAnchor.mesh.physicsImpostor.addJoint(pendulum.pendulumBall.mesh.physicsImpostor, distanceJoint);
   pendulum.pendulumBall.mesh.applyImpulse(new BABYLON.Vector3(1.5, 0, 0), ball.mesh.getAbsolutePosition());
 }
+
+function updatePendulum(){
+    pendulum.pendulumBall.mesh.applyImpulse(new BABYLON.Vector3(0.01, 0, 0), ball.mesh.getAbsolutePosition());
+}
+
 
 /*-----------------------------------------------------------
  *                  PARTICLE SYSTEM
@@ -241,22 +264,67 @@ function setUpActionManager(){
   //register key actions
   scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function(evt){
       if(evt.sourceEvent.key == "a"){
-          paddle.mesh.position.x += -0.2;
-          scene.activeCamera.position.x += -0.2;
+          paddle.mesh.position.x += -0.01 * engine.getDeltaTime() * 2;
+          scene.activeCamera.position.x += -0.01 * engine.getDeltaTime() * 2;
       }else if(evt.sourceEvent.key == "d"){
-          paddle.mesh.position.x += 0.2;
-          scene.activeCamera.position.x += 0.2;
+          paddle.mesh.position.x += 0.01 * engine.getDeltaTime() * 2;
+          scene.activeCamera.position.x += 0.01 * engine.getDeltaTime() * 2;
       }
   }));
 }
 
 /*-----------------------------------------------------------
- *                  GAME STATE
+ *                  GAME UTILS
  * ---------------------------------------------------------*/
 
+function getRandomNumber(min, max){
+    return Math.random() * (max - min) + min;
+}
+
+/*-----------------------------------------------------------
+ *                  GAME STATE/ UPDATING
+ * ---------------------------------------------------------*/
+
+//updates breakable blocks
+ function updateBlocks(){
+     updateCollisionObjects(blocks.meshes);
+ }
+
+//updates powerups
+ function updatePowerups(){
+     updateCollisionObjects(powerups.meshes)
+ }
+
+//updates collision based objects (breakable blocks, powerups etc..)
+ function updateCollisionObjects(objects){
+     for(var i = objects.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
+         if(ball.mesh.intersectsMesh(objects[i], true)){
+            objects[i].dispose();         //destroy the mesh
+            objects.splice(i, 1);         //update array size
+            blocks.vacancies[i] = true;   //update vacancy
+            ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
+        }else{
+            objects[i].rotation.y += 0.01;    //rotate the cube
+        }
+     }
+ }
+
+//spawns a powerup, gives a 1 in 10 chance of a powerup being spawned
+function spawnPowerup(){
+    for(var i = 0; i < blocks.vacancies.length; i++){
+        if(blocks.vacancies[i] && getRandomNumber(1, 10) == 2){    //if there is a vacancy and you fall within the chance range
+            var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, scene, false);
+            powerup.position = blocks.positions[i];     //set the power up position to that of the vacant space
+            powerups.meshes.push(powerup);
+            powerups.positions[i] = powerup.position;
+            blocks.vacancies[i] = false;        //sapce is no longer vacant
+        }
+    }
+}
 
 
- //add a block wider than the sphere radius to a distance joint on the sphere so players can hit the ball from straight under
+
+//add a block wider than the sphere radius to a distance joint on the sphere so players can hit the ball from straight under
 //create cubes that rotate in columns and rows as the blocks to break
 //add imposters for each cube that increments a score counter
 //create a sphere that is hanging from the top wall as a pendulumn (this is game win condition to hit it)
@@ -268,15 +336,23 @@ function setUpActionManager(){
 //add a replay function (reset function might suffice, maybe make an init function)
 //create a box above the 'topWall' inside the box the sphere with the pendulumn is there,
 //when all boxes have been destroyed a hinge joint lowers the side walls giving access to the end of game item.
+//if the ball gets within the box slow down time, resume normal speed when done
 
 var scene = createScene();
 //set up actions for scene
 setUpActionManager();
 
+
 engine.runRenderLoop(function(){
     scene.render();
-    for (var block in blocks) {
-
+    if(!gameOver){
+        if(blocks.length != 0){
+            updateBlocks();
+            updatePowerups();
+            spawnPowerup();
+        }else{
+            //open up the end game box
+        }
     }
 });
 
