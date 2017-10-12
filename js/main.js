@@ -344,7 +344,6 @@ function spawnPowerup(){
 function activatePowerup(){
     if(!isUsingPowerup){
         isUsingPowerup = true;
-        console.log("Powerup activated");
     }
 }
 
