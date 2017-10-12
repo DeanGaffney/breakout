@@ -264,11 +264,12 @@ function setUpActionManager(){
   //register key actions
   scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function(evt){
       if(evt.sourceEvent.key == "a"){
-          paddle.mesh.position.x += -0.01 * engine.getDeltaTime() * 2;
-          scene.activeCamera.position.x += -0.01 * engine.getDeltaTime() * 2;
+          //clamp the paddle and camera within the game area
+          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + -0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
+          scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
       }else if(evt.sourceEvent.key == "d"){
-          paddle.mesh.position.x += 0.01 * engine.getDeltaTime() * 2;
-          scene.activeCamera.position.x += 0.01 * engine.getDeltaTime() * 2;
+          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
+          scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
       }
   }));
 }
