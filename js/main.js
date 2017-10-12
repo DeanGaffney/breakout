@@ -47,6 +47,8 @@ var powerups = {
     types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]
 };
 
+var isUsingPowerup = false;
+var powerupTimer = 6000;    //6 seconds
 var score = 0;
 
 /*-----------------------------------------------------------
@@ -203,7 +205,7 @@ function updatePendulum(){
 }
 
 function openPendulumBox(){
-    
+
 }
 
 
@@ -280,6 +282,8 @@ function setUpActionManager(){
       }else if(evt.sourceEvent.key == "d"){
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
           scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
+      }else if(evt.sourceEvent.key == "r"){
+          activatePowerup();
       }
   }));
 }
@@ -337,9 +341,28 @@ function spawnPowerup(){
     }
 }
 
+function activatePowerup(){
+    if(!isUsingPowerup){
+        isUsingPowerup = true;
+        console.log("Powerup activated");
+    }
+}
+
 function updateBall(){
     if(ball.mesh.position.y < -10){     //ball has fallen out of game area
         gameOver = true;
+    }
+}
+
+function updatePlayer(){
+    if(isUsingPowerup){
+        if(powerupTimer <= 0){
+            isUsingPowerup = false;
+            powerupTimer = 6000;                        //reset to 6 seconds
+            powerups.playersPowerups.splice(0, 1);      //remove first index
+        }else{
+            powerupTimer -= engine.getDeltaTime();
+        }
     }
 }
 
@@ -370,6 +393,7 @@ engine.runRenderLoop(function(){
             //open up the end game box
             openPendulumBox();
         }
+        updatePlayer();
     }else{
         //display gui with score and a replay
         //gameOver = false;
