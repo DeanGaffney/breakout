@@ -5,9 +5,10 @@ var engine = new BABYLON.Engine(canvas, true);
 var gameOver = false;
 //create ball
 var ball = {
-    yVelocity : 15,
-    radius: 0.5
+    yVelocity : 15,     //balls constant y velocity
+    radius: 0.5         //balls radius
 };
+
 //create paddle
 var paddle = {};
 
@@ -32,24 +33,24 @@ var pendulum = {
 
 //object for blocks
 var blocks = {
-    activeBlocks: 0,
-    meshes: [],
-    positions: [],
-    vacancies: []
+    activeBlocks: 0,        //total blocks made in the game life
+    meshes: [],             //block meshes currently in the scene
+    positions: [],          //positions of block meshses in the scene(Vec3)
+    vacancies: []           //boolean array indicating if an index in the meshses array is free for a potential powerup
 };
 
 //object for powerups
 var powerups = {
-    activePowerups: 0,
-    meshes: [],
-    positions: [],
-    playersPowerups: [],
-    types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]
+    activePowerups: 0,      //total powerups made in the game life
+    meshes: [],             //powerup meshes currently in the scene
+    positions: [],          //position of the powerup meshes in the scene (Vec3)
+    playersPowerups: [],    //the players powerup inventory
+    types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]      //types of powerups available
 };
 
-var isUsingPowerup = false;
+var isUsingPowerup = false;     //powerups is off on game start
 var powerupTimer = 6000;    //6 seconds
-var score = 0;
+var score = 0;      //starting score
 
 /*-----------------------------------------------------------
 *                  SCENE SETUP
@@ -282,7 +283,7 @@ function setUpActionManager(){
       }else if(evt.sourceEvent.key == "d"){
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
           scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
-      }else if(evt.sourceEvent.key == "r"){
+      }else if(evt.sourceEvent.key == "r"){ //activate powerup
           activatePowerup();
       }
   }));
@@ -341,18 +342,21 @@ function spawnPowerup(){
     }
 }
 
+//activates a powerup
 function activatePowerup(){
-    if(!isUsingPowerup){
+    if(!isUsingPowerup){        //turn powerup on
         isUsingPowerup = true;
     }
 }
 
+//updats the ball object
 function updateBall(){
     if(ball.mesh.position.y < -10){     //ball has fallen out of game area
         gameOver = true;
     }
 }
 
+//update the player
 function updatePlayer(){
     if(isUsingPowerup){
         if(powerupTimer <= 0){
@@ -368,7 +372,6 @@ function updatePlayer(){
 
 
 //add a block wider than the sphere radius to a distance joint on the sphere so players can hit the ball from straight under
-//space bar activates powerups (longer paddle, maybe multiple balls, slow down time for a few seconds)
 //add a replay function (reset function might suffice, maybe make an init function)
 //when all boxes have been destroyed a hinge joint lowers the side walls giving access to the end of game item.
 //if the ball gets within the box slow down time, resume normal speed when done
