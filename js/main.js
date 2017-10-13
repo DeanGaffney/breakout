@@ -355,9 +355,11 @@ function activatePowerup(powerup){
         switch (powerup) {
             case "LONGER_PADDLE":
                 paddle.mesh.scaling.x += 1;
+                paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
                 break;
             case "BIGGER_BALL":
                 ball.mesh.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+                ball.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(ball.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 1}, scene);
                 break;
             case "SLOW_MOTION":
                 scene.getPhysicsEngine().setTimeStep(SLOW_MOTION_STEP_TIME);
@@ -365,6 +367,23 @@ function activatePowerup(powerup){
             default:
 
         }
+    }
+}
+
+function removePowerupEffect(powerup){
+    switch(powerup){
+        case "LONGER_PADDLE":
+            paddle.mesh.scaling = paddle.originalScale;
+            paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
+            break;
+        case "BIGGER_BALL":
+            ball.mesh.scaling = ball.originalScale;
+            ball.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(ball.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 1}, scene);
+            break;
+        case "SLOW_MOTION":
+            scene.getPhysicsEngine().setTimeStep(DEFAULT_STEP_TIME);
+            break;
+        default:
     }
 }
 
@@ -381,6 +400,7 @@ function updatePlayer(){
         if(powerupTimer <= 0){
             isUsingPowerup = false;
             powerupTimer = 6000;                        //reset to 6 seconds
+            removePowerupEffect(powerups.playersPowerups[0]);
             powerups.playersPowerups.splice(0, 1);      //remove first index
         }else{
             powerupTimer -= engine.getDeltaTime();
