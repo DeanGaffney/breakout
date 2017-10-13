@@ -105,6 +105,7 @@ function resetGameScene(){
   areaWalls.topWall.mesh.position = new BABYLON.Vector3(0, 5.8, 0);
 
   paddle.mesh.position = new BABYLON.Vector3(0, -4, 0);
+  console.log(paddle.mesh.rotation.z);
 
   gameScene.activeCamera.setTarget(new BABYLON.Vector3(0,0,0));
 
@@ -424,6 +425,7 @@ function setUpActionManager(gameScene){
           gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, minPaddleDistance, maxPaddleDistance);
       }else if(evt.sourceEvent.key == "w"){
           paddle.mesh.rotation.z += 0.01 * engine.getDeltaTime();  //rotate paddle
+          console.log(paddle.mesh.rotation.z);
       }else if(evt.sourceEvent.key == "s"){
           paddle.mesh.rotation.z += -0.01 * engine.getDeltaTime(); //rotate the paddle
       }else if(evt.sourceEvent.key == "r"){ //activate powerup
