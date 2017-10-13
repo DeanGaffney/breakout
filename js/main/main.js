@@ -12,8 +12,6 @@ Game.gameScenes.push(splashScreen);
 Game.gameScenes.push(gameScene);
 Game.gameScenes.push(gameOverScreen);
 
-Game.activeScene = 0;
-
 engine.runRenderLoop(function(){
       Game.gameScenes[Game.activeScene].renderLoop();
 });

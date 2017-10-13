@@ -73,7 +73,6 @@ function resetGameScene(){
   powerupTimer = 6000;    //6 seconds
   score = 0;      //starting score
 
-  pendulumBoxOpen = false;
 
   clearBlocks();
   //object for blocks, destroy them
@@ -114,6 +113,9 @@ function resetGameScene(){
   pendulumBox.pendSideWall1.mesh.position = new BABYLON.Vector3(-1.5, 4.5, 0);
   pendulumBox.pendSideWall2.mesh.position = new BABYLON.Vector3(1.5, 4.5, 0);
   pendulumBox.pendBottomWall.mesh.position = new BABYLON.Vector3(0, 3.25, 0);
+
+  pendulumBoxOpen = false;
+
 
   //create anchor point for pendulum
   pendulum.pendulumAnchor.mesh.position = new BABYLON.Vector3(0, 5.6, 0);
@@ -164,17 +166,17 @@ function initGameScene(){
 
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
-        if(blocks.length != 0){
-            updateBall();
+        if(blocks.meshes.length != 0){
             updateBlocks();
-            updatePowerups();
-            spawnPowerup();
         }else{
             //open up the end game box
             if(!pendulumBoxOpen){
                 openPendulumBox();
             }
         }
+        updatePowerups();
+        spawnPowerup();
+        updateBall();
         updatePlayer();
     }else{
       resetGameScene();
@@ -413,21 +415,21 @@ function setUpActionManager(gameScene){
 
   //register key actions
   gameScene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function(evt){
-      if(evt.sourceEvent.key == "ArrowLeft"){
+      if(evt.sourceEvent.key == "a"){
           //clamp the paddle and camera within the game area
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + -0.01 * engine.getDeltaTime() * 4, minPaddleDistance, maxPaddleDistance);
           gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * 2, minPaddleDistance, maxPaddleDistance);
-      }else if(evt.sourceEvent.key == "ArrowRight"){
+      }else if(evt.sourceEvent.key == "d"){
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 4, minPaddleDistance, maxPaddleDistance);
           gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, minPaddleDistance, maxPaddleDistance);
-      }else if(evt.sourceEvent.key == "ArrowUp"){
-          paddle.mesh.rotation.z = BABYLON.MathTools.Clamp(paddle.mesh.rotation.z + -0.01 * engine.getDeltaTime(), 0, 6);
-      }else if(evt.sourceEvent.key == "ArrowDown"){
-          paddle.mesh.rotate.z = BABYLON.MathTools.Clamp(paddle.mesh.rotation.z + 0.01 * engine.getDeltaTime(), 0, 6);
+      }else if(evt.sourceEvent.key == "w"){
+          paddle.mesh.rotation.z += 0.01 * engine.getDeltaTime();  //rotate paddle
+      }else if(evt.sourceEvent.key == "s"){
+          paddle.mesh.rotation.z += -0.01 * engine.getDeltaTime(); //rotate the paddle
       }else if(evt.sourceEvent.key == "r"){ //activate powerup
           activatePowerup(powerups.playersPowerups[0]);
-      }else if(evt.sourceEvent.key == "e"){
-          blocks.length = 0;
+      }else if(evt.sourceEvent.key == "e"){   //END OF GAME BUTTON TO DEMONSTRACTE PENDULUM BOX!!
+          blocks.meshes.length = 0;
       }
   }));
 }
@@ -478,7 +480,8 @@ function setPaddleMovementLimit(){
 //spawns a powerup, gives a 1 in 10 chance of a powerup being spawned
 function spawnPowerup(){
     for(var i = 0; i < blocks.vacancies.length; i++){
-        if(blocks.vacancies[i] && getRandomNumber(1, 10) <= 2){    //if there is a vacancy and you fall within the chance range
+        const chance = Math.floor(getRandomNumber(1, 10));
+        if(blocks.vacancies[i] && chance % 2 == 0 && powerups.meshes.length < 3){    //if there is a vacancy and you fall within the chance range
             var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
             powerup.position = blocks.positions[i];     //set the power up position to that of the vacant space
             powerups.meshes.push(powerup);
@@ -540,6 +543,9 @@ function removePowerupEffect(powerup){
 function updateBall(){
     if(ball.mesh.position.y < -10){     //ball has fallen out of game area
         Game.gameStates.gameOver = true;
+    }
+    if(Math.floor(ball.mesh.physicsImpostor.getLinearVelocity().x) == 0){
+       ball.mesh.applyImpulse(new BABYLON.Vector3(0.1, 0, 0), ball.mesh.getAbsolutePosition());
     }
 }
 
