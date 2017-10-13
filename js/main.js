@@ -25,7 +25,8 @@ var areaWalls = {
 //create pendulum box
 var pendulumBox = {
   pendSideWall1: {},
-  pendSideWall2: {}
+  pendSideWall2: {},
+  pendBottomWall: {}
 };
 
 //pendulum object
@@ -118,6 +119,9 @@ var createScene = function () {
   pendulumBox.pendSideWall2.mesh = BABYLON.Mesh.CreateBox("pendSideWall2", 4, scene);
   pendulumBox.pendSideWall2.mesh.scaling = pendulumBox.pendSideWall1.mesh.scaling;
   pendulumBox.pendSideWall2.mesh.position = new BABYLON.Vector3(1.5, 4.5, 0);
+  pendulumBox.pendBottomWall.mesh = BABYLON.Mesh.CreateBox("pendBottomWall", 4, scene);
+  pendulumBox.pendBottomWall.mesh.scaling = new BABYLON.Vector3(0.84, 0.1, -1.3);
+  pendulumBox.pendBottomWall.mesh.position = new BABYLON.Vector3(0, 3.28, 0);
 
   //create anchor point for pendulum
   pendulum.pendulumAnchor.mesh = BABYLON.Mesh.CreateSphere("pendulum_anchor", 16, 0.3, scene);
@@ -156,8 +160,9 @@ function setUpPhysicsImposters(){
   areaWalls.sideWall1.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(areaWalls.sideWall1.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
   areaWalls.sideWall2.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(areaWalls.sideWall2.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
   areaWalls.topWall.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(areaWalls.topWall.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
-  pendulumBox.pendSideWall1.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendSideWall1.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0, restitution: 1})
-  pendulumBox.pendSideWall2.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendSideWall2.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0, restitution: 1})
+  pendulumBox.pendSideWall1.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendSideWall1.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0, restitution: 1});
+  pendulumBox.pendSideWall2.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendSideWall2.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0, restitution: 1});
+  pendulumBox.pendBottomWall.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendBottomWall.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0, restitution: 1});
   pendulum.pendulumAnchor.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulum.pendulumAnchor.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.0, restitution: 0}, scene);
   pendulum.pendulumBall.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulum.pendulumBall.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 0}, scene);
   paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
@@ -188,6 +193,10 @@ function setUpPhysicsImposters(){
 
   ball.mesh.physicsImpostor.registerOnPhysicsCollide(pendulumBox.pendSideWall2.mesh.physicsImpostor, function(main, collided) {
       ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
+  });
+
+  ball.mesh.physicsImpostor.registerOnPhysicsCollide(pendulumBox.pendBottomWall.mesh.physicsImpostor, function(main, collided) {
+      ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
   });
 
   ball.mesh.physicsImpostor.registerOnPhysicsCollide(pendulum.pendulumBall.mesh.physicsImpostor, function(main, collided) {
@@ -355,10 +364,12 @@ function activatePowerup(powerup){
         switch (powerup) {
             case "LONGER_PADDLE":
                 paddle.mesh.scaling.x += 1;
+                //reset the physics imposter to match the change in the mesh
                 paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
                 break;
             case "BIGGER_BALL":
                 ball.mesh.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+                //reset the physics imposter to match the change in the mesh
                 ball.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(ball.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 1}, scene);
                 break;
             case "SLOW_MOTION":
@@ -374,10 +385,12 @@ function removePowerupEffect(powerup){
     switch(powerup){
         case "LONGER_PADDLE":
             paddle.mesh.scaling = paddle.originalScale;
+            //reset the physics imposter to match the change in the mesh
             paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
             break;
         case "BIGGER_BALL":
             ball.mesh.scaling = ball.originalScale;
+            //reset the physics imposter to match the change in the mesh
             ball.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(ball.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 1}, scene);
             break;
         case "SLOW_MOTION":
