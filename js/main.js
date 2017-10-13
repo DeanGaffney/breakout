@@ -5,12 +5,15 @@ var engine = new BABYLON.Engine(canvas, true);
 var gameOver = false;
 //create ball
 var ball = {
+    originalScale: new BABYLON.Vector3(0.5, 0.5, 0.5),
     yVelocity : 15,     //balls constant y velocity
     radius: 0.5         //balls radius
 };
 
 //create paddle
-var paddle = {};
+var paddle = {
+    originalScale: new BABYLON.Vector3(1, 0.2, 1)
+};
 
 //create area walls
 var areaWalls = {
@@ -48,6 +51,9 @@ var powerups = {
     types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]      //types of powerups available
 };
 
+const DEFAULT_STEP_TIME = 1/240;
+const SLOW_MOTION_STEP_TIME = 1/480;
+
 var isUsingPowerup = false;     //powerups is off on game start
 var powerupTimer = 6000;    //6 seconds
 var score = 0;      //starting score
@@ -78,7 +84,7 @@ var createScene = function () {
 
   //enable physics and time step
   scene.enablePhysics();
-  scene.getPhysicsEngine().setTimeStep(1/240);
+  scene.getPhysicsEngine().setTimeStep(DEFAULT_STEP_TIME);
   var score = 0;
 
   /*-----------------------------------------------------------
@@ -284,7 +290,7 @@ function setUpActionManager(){
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
           scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
       }else if(evt.sourceEvent.key == "r"){ //activate powerup
-          activatePowerup();
+          activatePowerup("LONGER_PADDLE");
       }
   }));
 }
@@ -343,9 +349,22 @@ function spawnPowerup(){
 }
 
 //activates a powerup
-function activatePowerup(){
+function activatePowerup(powerup){
     if(!isUsingPowerup){        //turn powerup on
         isUsingPowerup = true;
+        switch (powerup) {
+            case "LONGER_PADDLE":
+                paddle.mesh.scaling.x += 1;
+                break;
+            case "BIGGER_BALL":
+                ball.mesh.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
+                break;
+            case "SLOW_MOTION":
+                scene.getPhysicsEngine().setTimeStep(SLOW_MOTION_STEP_TIME);
+                break;
+            default:
+
+        }
     }
 }
 
