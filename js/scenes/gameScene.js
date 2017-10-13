@@ -1,8 +1,3 @@
-var canvas = document.getElementById("renderCanvas");
-// Load the BABYLON 3D engine
-var engine = new BABYLON.Engine(canvas, true);
-
-var gameOver = false;
 //create ball
 var ball = {
     originalScale: new BABYLON.Vector3(1, 1, 1),
@@ -64,21 +59,75 @@ var pendulumBoxOpen = false;
 var minPaddleDistance;
 var maxPaddleDistance;
 
-//cameras
-var camera;
-
 
 /*-----------------------------------------------------------
 *                  gameScene SETUP
 * ---------------------------------------------------------*/
 
-var createScene = function () {
+function createGameScene() {
+  return initGameScene();
+}
 
+function resetGameScene(){
+  isUsingPowerup = false;     //powerups is off on game start
+  powerupTimer = 6000;    //6 seconds
+  score = 0;      //starting score
+
+  pendulumBoxOpen = false;
+
+  clearBlocks();
+  //object for blocks, destroy them
+  blocks = {
+      activeBlocks: 0,        //total blocks made in the game life
+      meshes: [],             //block meshes currently in the gameScene
+      positions: [],          //positions of block meshses in the gameScene(Vec3)
+      vacancies: []           //boolean array indicating if an index in the meshses array is free for a potential powerup
+  };
+
+  setUpBlocks();
+
+  clearPowerups();
+  //object for powerups
+  powerups = {
+      activePowerups: 0,      //total powerups made in the game life
+      meshes: [],             //powerup meshes currently in the gameScene
+      positions: [],          //position of the powerup meshes in the gameScene (Vec3)
+      playersPowerups: [],    //the players powerup inventory
+      types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]      //types of powerups available
+  };
+
+
+  //reset positions!
+  ball.mesh.position = new BABYLON.Vector3(0, -2, 0);
+  areaWalls.sideWall1.mesh.position = new BABYLON.Vector3(-8, 0, 0);
+
+  areaWalls.sideWall2.mesh.position = new BABYLON.Vector3(8, 0 , 0);
+
+  areaWalls.topWall.mesh.position = new BABYLON.Vector3(0, 5.8, 0);
+
+  paddle.mesh.position = new BABYLON.Vector3(0, -4, 0);
+
+  gameScene.activeCamera.setTarget(new BABYLON.Vector3(0,0,0));
+
+
+  ball.mesh.position = new BABYLON.Vector3(0, -2, 0);
+  pendulumBox.pendSideWall1.mesh.position = new BABYLON.Vector3(-1.5, 4.5, 0);
+  pendulumBox.pendSideWall2.mesh.position = new BABYLON.Vector3(1.5, 4.5, 0);
+  pendulumBox.pendBottomWall.mesh.position = new BABYLON.Vector3(0, 3.25, 0);
+
+  //create anchor point for pendulum
+  pendulum.pendulumAnchor.mesh.position = new BABYLON.Vector3(0, 5.6, 0);
+
+  pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
+}
+
+
+function initGameScene(){
   // This creates a basic Babylon gameScene object (non-mesh)
   var gameScene = new BABYLON.Scene(engine);
 
   // This creates and positions a free camera (non-mesh)
-  camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 3, -20), gameScene);
+  var camera = new BABYLON.FreeCamera("gameCamera", new BABYLON.Vector3(0, 3, -20), gameScene);
 
   camera.inputs.clear();
 
@@ -101,11 +150,49 @@ var createScene = function () {
   //enable physics and time step
   gameScene.enablePhysics();
   gameScene.getPhysicsEngine().setTimeStep(DEFAULT_STEP_TIME);
-  var score = 0;
 
-  /*-----------------------------------------------------------
-   *                  OBJECT CREATION
-   * ---------------------------------------------------------*/
+
+  setUpObjects();
+  setUpBlocks();
+  //set up actions for gameScene
+  setUpActionManager(gameScene);
+  setUpGameGUI();
+  setPaddleMovementLimit();
+  setUpPhysicsImposters();
+  setUpPendulum();
+  addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
+
+  gameScene.renderLoop = function(){
+    if(!Game.gameStates.gameOver){
+        if(blocks.length != 0){
+            updateBall();
+            updateBlocks();
+            updatePowerups();
+            spawnPowerup();
+        }else{
+            //open up the end game box
+            if(!pendulumBoxOpen){
+                openPendulumBox();
+            }
+        }
+        updatePlayer();
+    }else{
+      resetGameScene();
+      Game.activeScene++;
+      Game.gameStates.playing = false;
+      Game.gameStates.gameOver = true;
+    }
+    this.render();
+  }
+
+    return gameScene;
+}
+
+/*-----------------------------------------------------------
+ *                  OBJECT CREATION
+ * ---------------------------------------------------------*/
+function setUpObjects(){
+
   //create walls
   areaWalls.sideWall1.mesh = BABYLON.Mesh.CreateBox("sideWall1", 4, gameScene);
   areaWalls.sideWall1.mesh.scaling = new BABYLON.Vector3(0.1, 3, 1);
@@ -145,6 +232,9 @@ var createScene = function () {
   pendulum.pendulumBall.mesh = BABYLON.Mesh.CreateSphere("pendulum_ball", 16, 0.3, gameScene);
   pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
 
+}
+
+function setUpBlocks(){
   //create blocks
   var boxNumber = 0;
   for(var i = 0; i < 3; i++){
@@ -157,14 +247,18 @@ var createScene = function () {
           boxNumber++;
       }
   }
+}
 
-  setUpGameGUI();
-  setPaddleMovementLimit();
-  setUpPhysicsImposters();
-  setUpPendulum();
-  addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
+function clearBlocks(){
+  blocks.meshes.forEach(function(block){
+    block.dispose();
+  });
+}
 
-    return gameScene;
+function clearPowerups(){
+  powerups.meshes.forEach(function(powerup){
+    powerup.dispose();
+  });
 }
 
 
@@ -218,7 +312,7 @@ function setUpPhysicsImposters(){
 
   ball.mesh.physicsImpostor.registerOnPhysicsCollide(pendulum.pendulumBall.mesh.physicsImpostor, function(main, collided) {
       ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
-      gameOver = true;
+      Game.gameStates.gameOver = true;
   });
 }
 
@@ -313,7 +407,7 @@ function addParticleSystemTo(objectMesh, colour1, colour2, colourDead ,gameScene
  *                      ACTIONS
  * ---------------------------------------------------------*/
 
-function setUpActionManager(){
+function setUpActionManager(gameScene){
   //action manager
   gameScene.actionManager = new BABYLON.ActionManager(gameScene);
 
@@ -445,7 +539,7 @@ function removePowerupEffect(powerup){
 //updats the ball object
 function updateBall(){
     if(ball.mesh.position.y < -10){     //ball has fallen out of game area
-        gameOver = true;
+        Game.gameStates.gameOver = true;
     }
 }
 
@@ -463,49 +557,8 @@ function updatePlayer(){
     }
 }
 
-
-
 //add a block wider than the sphere radius to a distance joint on the sphere so players can hit the ball from straight under
 //add a replay function (reset function might suffice, maybe make an init function)
 //when all boxes have been destroyed a hinge joint lowers the side walls giving access to the end of game item.
 //if the ball gets within the box slow down time, resume normal speed when done
 //clamp camera rotation
-
-var gameScene = createScene();
-splashScreen = setUpSplashScreenGUI();
-gameOverScreen = setUpGameOverScreenGUI();
-
-//set up actions for gameScene
-setUpActionManager();
-
-
-engine.runRenderLoop(function(){
-
-  splashScreen.render();    //run splash screen first
-    if(gameStart){
-      gameScene.render();
-      if(!gameOver){
-          if(blocks.length != 0){
-              updateBall();
-              updateBlocks();
-              updatePowerups();
-              spawnPowerup();
-          }else{
-              //open up the end game box
-              if(!pendulumBoxOpen){
-                  openPendulumBox();
-              }
-          }
-          updatePlayer();
-      }else{
-          //display gui with score and a replay
-          //gameOver = false;
-          //gameScene = createScene
-      }
-    }
-
-});
-
-window.addEventListener("resize", function () {
-  engine.resize();
-});
