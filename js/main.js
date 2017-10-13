@@ -59,6 +59,8 @@ var isUsingPowerup = false;     //powerups is off on game start
 var powerupTimer = 6000;    //6 seconds
 var score = 0;      //starting score
 
+var pendulumBoxOpen = false;
+
 /*-----------------------------------------------------------
 *                  SCENE SETUP
 * ---------------------------------------------------------*/
@@ -146,7 +148,6 @@ var createScene = function () {
   setUpPhysicsImposters();
   setUpPendulum();
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), scene);
-  addParticleSystemTo(pendulum.pendulumBall.mesh, new BABYLON.Color4(0.1, 0.8, 0.1, 1.0), new BABYLON.Color4(0.1, 0.8, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), scene);
 
     return scene;
 }
@@ -213,7 +214,7 @@ function setUpPendulum(){
   //pendulumn physics distance joint
   var distanceJoint = new BABYLON.DistanceJoint({ maxDistance: 1 });
   pendulum.pendulumAnchor.mesh.physicsImpostor.addJoint(pendulum.pendulumBall.mesh.physicsImpostor, distanceJoint);
-  pendulum.pendulumBall.mesh.applyImpulse(new BABYLON.Vector3(1.5, 0, 0), ball.mesh.getAbsolutePosition());
+  pendulum.pendulumBall.mesh.applyImpulse(new BABYLON.Vector3(1.5, 0, 0), pendulum.pendulumBall.mesh.getAbsolutePosition());
 }
 
 function updatePendulum(){
@@ -221,7 +222,17 @@ function updatePendulum(){
 }
 
 function openPendulumBox(){
+    //start particle system
+    addParticleSystemTo(pendulum.pendulumBall.mesh, new BABYLON.Color4(0.1, 0.8, 0.1, 1.0), new BABYLON.Color4(0.1, 0.8, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), scene);
 
+    //blow open the doors
+    pendulumBox.pendSideWall1.mesh.physicsImpostor.setMass(1);
+    pendulumBox.pendSideWall1.mesh.applyImpulse(new BABYLON.Vector3(-5, 0, 0), pendulumBox.pendSideWall1.mesh.getAbsolutePosition());
+
+    pendulumBox.pendSideWall2.mesh.physicsImpostor.setMass(1);
+    pendulumBox.pendSideWall2.mesh.applyImpulse(new BABYLON.Vector3(5, 0, 0), pendulumBox.pendSideWall2.mesh.getAbsolutePosition());
+
+    pendulumBoxOpen = true;
 }
 
 
@@ -299,7 +310,9 @@ function setUpActionManager(){
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
           scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
       }else if(evt.sourceEvent.key == "r"){ //activate powerup
-          activatePowerup("LONGER_PADDLE");
+          activatePowerup(powerups.playersPowerups[0]);
+      }else if(evt.sourceEvent.key == "e"){
+          blocks.length = 0;
       }
   }));
 }
@@ -445,7 +458,9 @@ engine.runRenderLoop(function(){
             spawnPowerup();
         }else{
             //open up the end game box
-            openPendulumBox();
+            if(!pendulumBoxOpen){
+                openPendulumBox();
+            }
         }
         updatePlayer();
     }else{
