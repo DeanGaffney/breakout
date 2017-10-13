@@ -5,8 +5,8 @@ var engine = new BABYLON.Engine(canvas, true);
 var gameOver = false;
 //create ball
 var ball = {
-    originalScale: new BABYLON.Vector3(0.5, 0.5, 0.5),
-    yVelocity : 15,     //balls constant y velocity
+    originalScale: new BABYLON.Vector3(1, 1, 1),
+    yVelocity : 13,     //balls constant y velocity
     radius: 0.5         //balls radius
 };
 
@@ -61,6 +61,14 @@ var score = 0;      //starting score
 
 var pendulumBoxOpen = false;
 
+var minPaddleDistance;
+var maxPaddleDistance;
+
+//cameras
+var camera;
+
+//GUI
+var advancedTexture;
 /*-----------------------------------------------------------
 *                  SCENE SETUP
 * ---------------------------------------------------------*/
@@ -71,13 +79,19 @@ var createScene = function () {
   var scene = new BABYLON.Scene(engine);
 
   // This creates and positions a free camera (non-mesh)
-  var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 3, -20), scene);
+  camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 3, -20), scene);
+
+  camera.inputs.clear();
 
   // This targets the camera to scene origin
   camera.setTarget(BABYLON.Vector3.Zero());
 
   // This attaches the camera to the canvas
   camera.attachControl(canvas, true);
+
+
+  //set still camera as active camera
+  scene.activeCamera = camera;
 
   // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
   var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
@@ -122,8 +136,8 @@ var createScene = function () {
   pendulumBox.pendSideWall2.mesh.scaling = pendulumBox.pendSideWall1.mesh.scaling;
   pendulumBox.pendSideWall2.mesh.position = new BABYLON.Vector3(1.5, 4.5, 0);
   pendulumBox.pendBottomWall.mesh = BABYLON.Mesh.CreateBox("pendBottomWall", 4, scene);
-  pendulumBox.pendBottomWall.mesh.scaling = new BABYLON.Vector3(0.84, 0.1, -1.3);
-  pendulumBox.pendBottomWall.mesh.position = new BABYLON.Vector3(0, 3.28, 0);
+  pendulumBox.pendBottomWall.mesh.scaling = new BABYLON.Vector3(0.84, 0.1, 1);
+  pendulumBox.pendBottomWall.mesh.position = new BABYLON.Vector3(0, 3.25, 0);
 
   //create anchor point for pendulum
   pendulum.pendulumAnchor.mesh = BABYLON.Mesh.CreateSphere("pendulum_anchor", 16, 0.3, scene);
@@ -145,11 +159,24 @@ var createScene = function () {
       }
   }
 
+  setUpGUI();
+  setPaddleMovementLimit();
   setUpPhysicsImposters();
   setUpPendulum();
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), scene);
 
     return scene;
+}
+
+function setUpGUI(){
+    advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI");
+
+    var playButton = BABYLON.GUI.Button.CreateSimpleButton("playButton", "PLAY!");
+    button.width = 0.2;
+    button.height = "40px";
+    button.color = "white";
+    button.background = "red";
+    advancedTexture.addControl(playButton);
 }
 
 /*-----------------------------------------------------------
@@ -161,14 +188,14 @@ function setUpPhysicsImposters(){
   areaWalls.sideWall1.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(areaWalls.sideWall1.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
   areaWalls.sideWall2.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(areaWalls.sideWall2.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
   areaWalls.topWall.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(areaWalls.topWall.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
-  pendulumBox.pendSideWall1.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendSideWall1.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0, restitution: 1});
-  pendulumBox.pendSideWall2.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendSideWall2.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0, restitution: 1});
+  pendulumBox.pendSideWall1.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendSideWall1.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0.0, restitution: 1});
+  pendulumBox.pendSideWall2.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendSideWall2.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0.0, restitution: 1});
   pendulumBox.pendBottomWall.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulumBox.pendBottomWall.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass:0, restitution: 1});
   pendulum.pendulumAnchor.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulum.pendulumAnchor.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.0, restitution: 0}, scene);
   pendulum.pendulumBall.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(pendulum.pendulumBall.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 0}, scene);
   paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
   ball.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(ball.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 1}, scene);
-  ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0, ball.yVelocity, 0));
+  ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(getRandomNumber(-4 ,4), ball.yVelocity, 0));
 
   //collision actions with imposters
   ball.mesh.physicsImpostor.registerOnPhysicsCollide(paddle.mesh.physicsImpostor, function(main, collided) {
@@ -226,12 +253,13 @@ function openPendulumBox(){
     addParticleSystemTo(pendulum.pendulumBall.mesh, new BABYLON.Color4(0.1, 0.8, 0.1, 1.0), new BABYLON.Color4(0.1, 0.8, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), scene);
 
     //blow open the doors
-    pendulumBox.pendSideWall1.mesh.physicsImpostor.setMass(1);
-    pendulumBox.pendSideWall1.mesh.applyImpulse(new BABYLON.Vector3(-5, 0, 0), pendulumBox.pendSideWall1.mesh.getAbsolutePosition());
-
-    pendulumBox.pendSideWall2.mesh.physicsImpostor.setMass(1);
+    pendulumBox.pendSideWall1.mesh.physicsImpostor.setMass(0.1);
+    pendulumBox.pendSideWall2.mesh.physicsImpostor.setMass(0.1);
+    pendulumBox.pendSideWall1.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(-5, 0, 0));
+    pendulumBox.pendSideWall1.mesh.physicsImpostor.setAngularVelocity(new BABYLON.Quaternion(1 ,0 ,0, 0));
     pendulumBox.pendSideWall2.mesh.applyImpulse(new BABYLON.Vector3(5, 0, 0), pendulumBox.pendSideWall2.mesh.getAbsolutePosition());
-
+    pendulumBox.pendSideWall2.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(5, 0, 0));
+    pendulumBox.pendSideWall2.mesh.physicsImpostor.setAngularVelocity(new BABYLON.Quaternion(-1 ,0 ,0, 0));
     pendulumBoxOpen = true;
 }
 
@@ -302,13 +330,17 @@ function setUpActionManager(){
 
   //register key actions
   scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function(evt){
-      if(evt.sourceEvent.key == "a"){
+      if(evt.sourceEvent.key == "ArrowLeft"){
           //clamp the paddle and camera within the game area
-          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + -0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
-          scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
-      }else if(evt.sourceEvent.key == "d"){
-          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
-          scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, -6.7, 6.7);
+          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + -0.01 * engine.getDeltaTime() * 4, minPaddleDistance, maxPaddleDistance);
+          scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * 2, minPaddleDistance, maxPaddleDistance);
+      }else if(evt.sourceEvent.key == "ArrowRight"){
+          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 4, minPaddleDistance, maxPaddleDistance);
+          scene.activeCamera.position.x = BABYLON.MathTools.Clamp(scene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, minPaddleDistance, maxPaddleDistance);
+      }else if(evt.sourceEvent.key == "ArrowUp"){
+          paddle.mesh.rotation.z = BABYLON.MathTools.Clamp(paddle.mesh.rotation.z + -0.01 * engine.getDeltaTime(), 0, 6);
+      }else if(evt.sourceEvent.key == "ArrowDown"){
+          paddle.mesh.rotate.z = BABYLON.MathTools.Clamp(paddle.mesh.rotation.z + 0.01 * engine.getDeltaTime(), 0, 6);
       }else if(evt.sourceEvent.key == "r"){ //activate powerup
           activatePowerup(powerups.playersPowerups[0]);
       }else if(evt.sourceEvent.key == "e"){
@@ -328,6 +360,12 @@ function getRandomNumber(min, max){
 /*-----------------------------------------------------------
  *                  GAME STATE/ UPDATING
  * ---------------------------------------------------------*/
+function setPaddleMovementLimit(){
+  const offset = 0.3;
+    //set paddle distance restrictions, set here because the paddle mesh changes on power up
+    minPaddleDistance = (areaWalls.sideWall1.mesh.position.x + paddle.mesh.scaling.x) + offset;
+    maxPaddleDistance = (areaWalls.sideWall2.mesh.position.x - paddle.mesh.scaling.x) - offset;
+}
 
 //updates breakable blocks
  function updateBlocks(){
@@ -379,6 +417,7 @@ function activatePowerup(powerup){
                 paddle.mesh.scaling.x += 1;
                 //reset the physics imposter to match the change in the mesh
                 paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
+                setPaddleMovementLimit();
                 break;
             case "BIGGER_BALL":
                 ball.mesh.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
@@ -400,6 +439,7 @@ function removePowerupEffect(powerup){
             paddle.mesh.scaling = paddle.originalScale;
             //reset the physics imposter to match the change in the mesh
             paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, scene);
+            setPaddleMovementLimit();
             break;
         case "BIGGER_BALL":
             ball.mesh.scaling = ball.originalScale;
