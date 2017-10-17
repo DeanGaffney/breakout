@@ -7,7 +7,9 @@ var ball = {
 
 //create paddle
 var paddle = {
-    originalScale: new BABYLON.Vector3(1, 0.2, 1)
+    originalScale: new BABYLON.Vector3(1, 0.2, 1),
+    originalSpeed: 2,
+    currentSpeed: 2
 };
 
 //create area walls
@@ -44,7 +46,7 @@ var powerups = {
     meshes: [],             //powerup meshes currently in the gameScene
     positions: [],          //position of the powerup meshes in the gameScene (Vec3)
     playersPowerups: [],    //the players powerup inventory
-    types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]      //types of powerups available
+    types: ["LONGER_PADDLE", "SLOW_MOTION", "SPEED_UP"]      //types of powerups available
 };
 
 const DEFAULT_STEP_TIME = 1/240;
@@ -69,61 +71,10 @@ function createGameScene() {
 }
 
 function resetGameScene(){
-  isUsingPowerup = false;     //powerups is off on game start
-  powerupTimer = 6000;    //6 seconds
-  score = 0;      //starting score
-
-
-  clearBlocks();
-  //object for blocks, destroy them
-  blocks = {
-      activeBlocks: 0,        //total blocks made in the game life
-      meshes: [],             //block meshes currently in the gameScene
-      positions: [],          //positions of block meshses in the gameScene(Vec3)
-      vacancies: []           //boolean array indicating if an index in the meshses array is free for a potential powerup
-  };
-
-  setUpBlocks();
-
-  clearPowerups();
-  //object for powerups
-  powerups = {
-      activePowerups: 0,      //total powerups made in the game life
-      meshes: [],             //powerup meshes currently in the gameScene
-      positions: [],          //position of the powerup meshes in the gameScene (Vec3)
-      playersPowerups: [],    //the players powerup inventory
-      types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]      //types of powerups available
-  };
-
-
-  //reset positions!
-  ball.mesh.position = new BABYLON.Vector3(0, -2, 0);
-  areaWalls.sideWall1.mesh.position = new BABYLON.Vector3(-8, 0, 0);
-
-  areaWalls.sideWall2.mesh.position = new BABYLON.Vector3(8, 0 , 0);
-
-  areaWalls.topWall.mesh.position = new BABYLON.Vector3(0, 5.8, 0);
-
-  paddle.mesh.position = new BABYLON.Vector3(0, -4, 0);
-  console.log(paddle.mesh.rotation.z);
-
-  gameScene.activeCamera.setTarget(new BABYLON.Vector3(0,0,0));
-
-
-  ball.mesh.position = new BABYLON.Vector3(0, -2, 0);
-  pendulumBox.pendSideWall1.mesh.position = new BABYLON.Vector3(-1.5, 4.5, 0);
-  pendulumBox.pendSideWall2.mesh.position = new BABYLON.Vector3(1.5, 4.5, 0);
-  pendulumBox.pendBottomWall.mesh.position = new BABYLON.Vector3(0, 3.25, 0);
-
-  pendulumBoxOpen = false;
-
-
-  //create anchor point for pendulum
-  pendulum.pendulumAnchor.mesh.position = new BABYLON.Vector3(0, 5.6, 0);
-
-  pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
+  clearObjects();
+  setUpObjects();
+  addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 }
-
 
 function initGameScene(){
   // This creates a basic Babylon gameScene object (non-mesh)
@@ -156,13 +107,8 @@ function initGameScene(){
 
 
   setUpObjects();
-  setUpBlocks();
   //set up actions for gameScene
   setUpActionManager(gameScene);
-  setUpGameGUI();
-  setPaddleMovementLimit();
-  setUpPhysicsImposters();
-  setUpPendulum();
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 
   gameScene.renderLoop = function(){
@@ -187,14 +133,43 @@ function initGameScene(){
     }
     this.render();
   }
-
     return gameScene;
 }
+
+
+function clearObjects(){
+    clearBlocks();
+    clearPowerups();
+
+    //destroy walls
+    areaWalls.sideWall1.mesh.dispose();
+    areaWalls.sideWall2.mesh.dispose();
+    areaWalls.topWall.mesh.dispose();
+
+    //destroy paddle
+    paddle.mesh.dispose();
+    //destroy ball
+    ball.mesh.dispose();
+
+    //destroy pendulum box
+    pendulumBox.pendSideWall1.mesh.dispose();
+    pendulumBox.pendSideWall2.mesh.dispose();
+    pendulumBox.pendBottomWall.mesh.dispose();
+
+    //destroy pendulum anchor
+    pendulum.pendulumAnchor.mesh.dispose();
+    pendulum.pendulumBall.mesh.dispose();
+}
+
 
 /*-----------------------------------------------------------
  *                  OBJECT CREATION
  * ---------------------------------------------------------*/
 function setUpObjects(){
+
+  isUsingPowerup = false;     //powerups is off on game start
+  powerupTimer = 6000;    //6 seconds
+  score = 0;      //starting score
 
   //create walls
   areaWalls.sideWall1.mesh = BABYLON.Mesh.CreateBox("sideWall1", 4, gameScene);
@@ -235,9 +210,19 @@ function setUpObjects(){
   pendulum.pendulumBall.mesh = BABYLON.Mesh.CreateSphere("pendulum_ball", 16, 0.3, gameScene);
   pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
 
+  setupBlocks();
+  setUpGameGUI();
+  setPaddleMovementLimit();
+  setUpPhysicsImposters();
+  setUpPendulum();
+
+  pendulumBoxOpen = false;
+
+  // gameScene.activeCamera.position = new BABYLON.Vector3(0, 3, -20);
+  // gameScene.activeCamera.setTarget(BABYLON.Vector3.Zero());
 }
 
-function setUpBlocks(){
+function setupBlocks(){
   //create blocks
   var boxNumber = 0;
   for(var i = 0; i < 3; i++){
@@ -256,12 +241,33 @@ function clearBlocks(){
   blocks.meshes.forEach(function(block){
     block.dispose();
   });
+
+  blocks.meshes.length = 0;
+
+  //object for blocks, destroy them
+  blocks = {
+      activeBlocks: 0,        //total blocks made in the game life
+      meshes: [],             //block meshes currently in the gameScene
+      positions: [],          //positions of block meshses in the gameScene(Vec3)
+      vacancies: []           //boolean array indicating if an index in the meshses array is free for a potential powerup
+  };
 }
 
 function clearPowerups(){
   powerups.meshes.forEach(function(powerup){
     powerup.dispose();
   });
+
+  powerups.meshes.length = 0;
+
+  //object for powerups destroy them
+  powerups = {
+      activePowerups: 0,      //total powerups made in the game life
+      meshes: [],             //powerup meshes currently in the gameScene
+      positions: [],          //position of the powerup meshes in the gameScene (Vec3)
+      playersPowerups: [],    //the players powerup inventory
+      types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]      //types of powerups available
+  };
 }
 
 
@@ -418,11 +424,11 @@ function setUpActionManager(gameScene){
   gameScene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function(evt){
       if(evt.sourceEvent.key == "a"){
           //clamp the paddle and camera within the game area
-          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + -0.01 * engine.getDeltaTime() * 4, minPaddleDistance, maxPaddleDistance);
-          gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * 2, minPaddleDistance, maxPaddleDistance);
+          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + -0.01 * engine.getDeltaTime() * paddle.currentSpeed, minPaddleDistance, maxPaddleDistance);
+          gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * paddle.currentSpeed /2, minPaddleDistance, maxPaddleDistance);
       }else if(evt.sourceEvent.key == "d"){
-          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * 4, minPaddleDistance, maxPaddleDistance);
-          gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * 2, minPaddleDistance, maxPaddleDistance);
+          paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed, minPaddleDistance, maxPaddleDistance);
+          gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed / 2, minPaddleDistance, maxPaddleDistance);
       }else if(evt.sourceEvent.key == "w"){
           paddle.mesh.rotation.z += 0.01 * engine.getDeltaTime();  //rotate paddle
           console.log(paddle.mesh.rotation.z);
@@ -448,7 +454,7 @@ function getRandomNumber(min, max){
  *                  GAME STATE/ UPDATING
  * ---------------------------------------------------------*/
 function setPaddleMovementLimit(){
-  const offset = 0.3;
+    const offset = 0.3;
     //set paddle distance restrictions, set here because the paddle mesh changes on power up
     minPaddleDistance = (areaWalls.sideWall1.mesh.position.x + paddle.mesh.scaling.x) + offset;
     maxPaddleDistance = (areaWalls.sideWall2.mesh.position.x - paddle.mesh.scaling.x) - offset;
@@ -485,6 +491,8 @@ function spawnPowerup(){
         const chance = Math.floor(getRandomNumber(1, 10));
         if(blocks.vacancies[i] && chance % 2 == 0 && powerups.meshes.length < 3){    //if there is a vacancy and you fall within the chance range
             var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
+            powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
+            powerup.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/bloc.jpg", gameScene);
             powerup.position = blocks.positions[i];     //set the power up position to that of the vacant space
             powerups.meshes.push(powerup);
             powerups.positions[i] = powerup.position;
@@ -507,10 +515,8 @@ function activatePowerup(powerup){
                 paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, gameScene);
                 setPaddleMovementLimit();
                 break;
-            case "BIGGER_BALL":
-                ball.mesh.scaling = new BABYLON.Vector3(2.5, 2.5, 2.5);
-                //reset the physics imposter to match the change in the mesh
-                ball.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(ball.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 1}, gameScene);
+            case "SPEED_UP":
+                paddle.currentSpeed = paddle.originalSpeed * 2;
                 break;
             case "SLOW_MOTION":
                 gameScene.getPhysicsEngine().setTimeStep(SLOW_MOTION_STEP_TIME);
@@ -529,10 +535,8 @@ function removePowerupEffect(powerup){
             paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, gameScene);
             setPaddleMovementLimit();
             break;
-        case "BIGGER_BALL":
-            ball.mesh.scaling = ball.originalScale;
-            //reset the physics imposter to match the change in the mesh
-            ball.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(ball.mesh, BABYLON.PhysicsImpostor.SphereImpostor, {mass: 0.5, restitution: 1}, gameScene);
+        case "SPEED_UP":
+            paddle.currentSpeed = paddle.originalSpeed;
             break;
         case "SLOW_MOTION":
             gameScene.getPhysicsEngine().setTimeStep(DEFAULT_STEP_TIME);
