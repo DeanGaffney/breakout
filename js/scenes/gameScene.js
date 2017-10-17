@@ -138,7 +138,7 @@ function initGameScene(){
 
 
 function clearObjects(){
-    clearBlocks();
+    clearBlocks(true);
     clearPowerups();
 
     //destroy walls
@@ -224,33 +224,34 @@ function setUpObjects(){
 
 function setupBlocks(){
   //create blocks
-  var boxNumber = 0;
   for(var i = 0; i < 3; i++){
       for(var j = 0; j < 8; j++){
           var block = BABYLON.Mesh.CreateBox("block_" + blocks.activeBlocks++, 0.5, gameScene, false);
           block.position = new BABYLON.Vector3(-3 + j, 2.5 - i, 0);
+          block.material = new BABYLON.StandardMaterial("block_material", gameScene);
+          block.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/albedo.png", gameScene);
           blocks.meshes.push(block);   //add block to blocks array for later collision detection
           blocks.positions.push(block.position);
           blocks.vacancies.push(false);
-          boxNumber++;
       }
   }
 }
 
-function clearBlocks(){
+function clearBlocks(deepClean){
   blocks.meshes.forEach(function(block){
     block.dispose();
   });
 
-  blocks.meshes.length = 0;
-
-  //object for blocks, destroy them
-  blocks = {
-      activeBlocks: 0,        //total blocks made in the game life
-      meshes: [],             //block meshes currently in the gameScene
-      positions: [],          //positions of block meshses in the gameScene(Vec3)
-      vacancies: []           //boolean array indicating if an index in the meshses array is free for a potential powerup
-  };
+  if(deepClean){
+      blocks.meshes.length = 0;
+      //object for blocks, destroy them
+      blocks = {
+          activeBlocks: 0,        //total blocks made in the game life
+          meshes: [],             //block meshes currently in the gameScene
+          positions: [],          //positions of block meshses in the gameScene(Vec3)
+          vacancies: []           //boolean array indicating if an index in the meshses array is free for a potential powerup
+      };
+  }
 }
 
 function clearPowerups(){
@@ -366,7 +367,7 @@ function addParticleSystemTo(objectMesh, colour1, colour2, colourDead ,gameScene
     var particleSystem = new BABYLON.ParticleSystem("particles", 2000, gameScene);
 
     //Texture of each particle
-    particleSystem.particleTexture = new BABYLON.Texture("./../resources/textures/flare.png", gameScene);
+    particleSystem.particleTexture = new BABYLON.Texture("./../../resources/textures/flare.png", gameScene);
 
     // Where the particles come from
     particleSystem.emitter = objectMesh; // the starting object, the emitter
@@ -431,12 +432,12 @@ function setUpActionManager(gameScene){
           gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed / 2, minPaddleDistance, maxPaddleDistance);
       }else if(evt.sourceEvent.key == "w"){
           paddle.mesh.rotation.z += 0.01 * engine.getDeltaTime();  //rotate paddle
-          console.log(paddle.mesh.rotation.z);
       }else if(evt.sourceEvent.key == "s"){
           paddle.mesh.rotation.z += -0.01 * engine.getDeltaTime(); //rotate the paddle
       }else if(evt.sourceEvent.key == "r"){ //activate powerup
           activatePowerup(powerups.playersPowerups[0]);
       }else if(evt.sourceEvent.key == "e"){   //END OF GAME BUTTON TO DEMONSTRACTE PENDULUM BOX!!
+          clearBlocks(false);
           blocks.meshes.length = 0;
       }
   }));
@@ -445,7 +446,6 @@ function setUpActionManager(gameScene){
 /*-----------------------------------------------------------
  *                  GAME UTILS
  * ---------------------------------------------------------*/
-
 function getRandomNumber(min, max){
     return Math.random() * (max - min) + min;
 }
@@ -462,27 +462,49 @@ function setPaddleMovementLimit(){
 
 //updates breakable blocks
  function updateBlocks(){
-     updateCollisionObjects(blocks.meshes);
- }
-
-//updates powerups
- function updatePowerups(){
-     updateCollisionObjects(powerups.meshes)
- }
-
-//updates collision based objects (breakable blocks, powerups etc..)
- function updateCollisionObjects(objects){
-     for(var i = objects.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
-         if(ball.mesh.intersectsMesh(objects[i], true)){
-            objects[i].dispose();         //destroy the mesh
-            objects.splice(i, 1);         //update array size
+     //updateCollisionObjects(blocks.meshes);
+     for(var i = blocks.meshes.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
+         if(ball.mesh.intersectsMesh(blocks.meshes[i], true)){
+            blocks.meshes[i].dispose();         //destroy the mesh
+            blocks.meshes.splice(i, 1);         //update array size
             blocks.vacancies[i] = true;   //update vacancy
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
             score += 100;
         }else{
-            objects[i].rotation.y += 0.01;    //rotate the cube
+            blocks.meshes[i].rotation.y += 0.01;    //rotate the cube
         }
      }
+ }
+
+//updates powerups
+ function updatePowerups(){
+     //updateCollisionObjects(powerups.meshes)
+     for(var i = powerups.meshes.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
+         if(ball.mesh.intersectsMesh(powerups.meshes[i], true)){
+            powerups.meshes[i].dispose();         //destroy the mesh
+            powerups.meshes.splice(i, 1);         //update array size
+            blocks.vacancies[i] = true;   //update vacancy
+            ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
+            score += 100;
+        }else{
+            powerups.meshes[i].rotation.y += 0.01;    //rotate the cube
+        }
+     }
+ }
+
+//updates collision based objects (breakable blocks, powerups etc..)
+ function updateCollisionObjects(objects){
+    //  for(var i = objects.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
+    //      if(ball.mesh.intersectsMesh(objects[i], true)){
+    //         objects[i].dispose();         //destroy the mesh
+    //         objects.splice(i, 1);         //update array size
+    //         blocks.vacancies[i] = true;   //update vacancy
+    //         ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
+    //         score += 100;
+    //     }else{
+    //         objects[i].rotation.y += 0.01;    //rotate the cube
+    //     }
+    //  }
  }
 
 //spawns a powerup, gives a 1 in 10 chance of a powerup being spawned
