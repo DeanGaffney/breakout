@@ -42,6 +42,7 @@ var blocks = {
 
 //object for powerups
 var powerups = {
+    powerupSpawnTime: 4000,
     activePowerups: 0,      //total powerups made in the game life
     meshes: [],             //powerup meshes currently in the gameScene
     positions: [],          //position of the powerup meshes in the gameScene (Vec3)
@@ -226,13 +227,14 @@ function setupBlocks(){
   //create blocks
   for(var i = 0; i < 3; i++){
       for(var j = 0; j < 8; j++){
+          var index = i + j;
           var block = BABYLON.Mesh.CreateBox("block_" + blocks.activeBlocks++, 0.5, gameScene, false);
           block.position = new BABYLON.Vector3(-3 + j, 2.5 - i, 0);
           block.material = new BABYLON.StandardMaterial("block_material", gameScene);
           block.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/albedo.png", gameScene);
-          blocks.meshes.push(block);   //add block to blocks array for later collision detection
-          blocks.positions.push(block.position);
-          blocks.vacancies.push(false);
+          blocks.meshes.splice(index, 0, block);   //add block to blocks array for later collision detection
+          blocks.positions.splice(index, 0, block.position);
+          blocks.vacancies.splice(index, 0 , false);
       }
   }
 }
@@ -476,7 +478,7 @@ function setPaddleMovementLimit(){
          if(ball.mesh.intersectsMesh(objects[i], true)){
             objects[i].dispose();         //destroy the mesh
             objects.splice(i, 1);         //update array size
-            blocks.vacancies[i] = true;   //update vacancy
+            blocks.vacancies[i] = true;   //update vacancy      *****THE BUG FOR POWERUP SPAWNING IS HERE AS POWER MESHES LENGTH IS DIFFERENT TO BLOCKS LENGTH!!!!****
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
             score += 100;
         }else{
@@ -487,21 +489,35 @@ function setPaddleMovementLimit(){
 
 //spawns a powerup, gives a 1 in 10 chance of a powerup being spawned
 function spawnPowerup(){
-    for(var i = 0; i < blocks.vacancies.length; i++){
-        const chance = Math.floor(getRandomNumber(1, 10));
-        if(blocks.vacancies[i] && chance % 2 == 0 && powerups.meshes.length < 3){    //if there is a vacancy and you fall within the chance range
-            var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
-            powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
-            powerup.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/bloc.jpg", gameScene);
-            powerup.position = blocks.positions[i];     //set the power up position to that of the vacant space
-            powerups.meshes.push(powerup);
-            powerups.positions[i] = powerup.position;
-            blocks.vacancies[i] = false;        //space is no longer vacant
-            if(powerups.playersPowerups.length < 3){    //max of 3 powerups
-                powerups.playersPowerups.push(powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
+    for(var i =0; i < 3; i++){
+        for(var j = 0; j < 8; j++){
+            var index = i+j;
+            if(canSpawnPowerup(index)){    //if there is a vacancy and you fall within the chance range
+                console.log("spawned powerup at index:" + index + "\nvacant:" + blocks.vacancies[index]);
+                blocks.vacancies[index] = false;        //space is no longer vacant
+                var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
+                powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
+                powerup.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/bloc.jpg", gameScene);
+                powerup.position = blocks.positions[index];     //set the power up position to that of the vacant space
+                powerups.meshes.splice(index, 0, powerup);              //push the powerup mesh to its array
+                powerups.powerupSpawnTime = 4;              //reset the spawn time
+                if(powerups.playersPowerups.length < 3){    //max of 3 powerups for player
+                    powerups.playersPowerups.splice(index, 0, powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
+                }
+            }else{
+                powerups.powerupSpawnTime -= engine.getDeltaTime();
             }
         }
     }
+}
+
+//returns true if can the space is vacant, the chance is less than 2,
+//there are less than 3 powerups already present and the spawn time is less than 0, false otherwise
+function canSpawnPowerup(index){
+    return blocks.vacancies[index]   &&
+    Math.floor(getRandomNumber(1, 10))  <= 3    &&
+    powerups.meshes.length < 3              &&
+    powerups.powerupSpawnTime <= 0;
 }
 
 //activates a powerup
