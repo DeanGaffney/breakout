@@ -111,6 +111,15 @@ function initGameScene(){
   // Default intensity is 1. Let's dim the light a small amount
   light.intensity = 0.7;
 
+  var envTexture = new BABYLON.CubeTexture("./../../resources/textures/SpecularHDR.dds", gameScene);
+  gameScene.createDefaultSkybox(envTexture, true, 1000);
+
+  gameScene.fogMode = BABYLON.Scene.FOGMODE_EXP;
+  gameScene.fogDensity = 0.01;
+  gameScene.fogStart = 20.0;
+  gameScene.fogEnd = 60.0;
+  gameScene.fogColor = new BABYLON.Color3(0.2, 0.3, 0.85);
+
   //enable physics and time step
   gameScene.enablePhysics();
   gameScene.getPhysicsEngine().setTimeStep(DEFAULT_STEP_TIME);
@@ -272,22 +281,29 @@ function setUpObjects(){
   powerupTimer = 6000;    //6 seconds
   score = 0;      //starting score
 
+  var wallMaterial = new BABYLON.StandardMaterial("wall_material",gameScene);
+  wallMaterial.diffuseTexture = new BABYLON.Texture("./../../resources/textures/floor.png", gameScene);
   //create walls
   areaWalls.sideWall1.mesh = BABYLON.Mesh.CreateBox("sideWall1", 4, gameScene);
   areaWalls.sideWall1.mesh.scaling = new BABYLON.Vector3(0.1, 3, 1);
   areaWalls.sideWall1.mesh.position = new BABYLON.Vector3(-8, 0, 0);
+  areaWalls.sideWall1.mesh.material = wallMaterial;
 
   areaWalls.sideWall2.mesh = BABYLON.Mesh.CreateBox("sideWall2", 4, gameScene);
   areaWalls.sideWall2.mesh.scaling = areaWalls.sideWall1.mesh.scaling;
   areaWalls.sideWall2.mesh.position = new BABYLON.Vector3(8, 0 , 0);
+  areaWalls.sideWall2.mesh.material = wallMaterial;
 
   areaWalls.topWall.mesh = BABYLON.Mesh.CreateBox("topWall", 4, gameScene);
   areaWalls.topWall.mesh.scaling = new BABYLON.Vector3(areaWalls.topWall.mesh.scaling.x + 3, 0.1, areaWalls.topWall.mesh.scaling.z);
   areaWalls.topWall.mesh.position = new BABYLON.Vector3(0, 5.8, 0);
+  areaWalls.topWall.mesh.material = wallMaterial;
 
   paddle.mesh = BABYLON.Mesh.CreateBox("paddle", 2, gameScene);
   paddle.mesh.scaling = new BABYLON.Vector3(1, 0.2, 1);
   paddle.mesh.position = new BABYLON.Vector3(0, -4, 0);
+  paddle.mesh.material = new BABYLON.StandardMaterial("paddle_material", gameScene);
+  paddle.mesh.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/floor_bump.png", gameScene);
 
   ball.mesh = BABYLON.Mesh.CreateSphere("ball", 16, ball.radius, gameScene);
   ball.mesh.position = new BABYLON.Vector3(0, -2, 0);
@@ -297,19 +313,29 @@ function setUpObjects(){
   pendulumBox.pendSideWall1.mesh = BABYLON.Mesh.CreateBox("pendSideWall1", 4, gameScene);
   pendulumBox.pendSideWall1.mesh.scaling = new BABYLON.Vector3(0.1, 0.5, 1);
   pendulumBox.pendSideWall1.mesh.position = new BABYLON.Vector3(-1.5, 4.5, 0);
+  pendulumBox.pendSideWall1.mesh.material = wallMaterial;
+
   pendulumBox.pendSideWall2.mesh = BABYLON.Mesh.CreateBox("pendSideWall2", 4, gameScene);
   pendulumBox.pendSideWall2.mesh.scaling = pendulumBox.pendSideWall1.mesh.scaling;
   pendulumBox.pendSideWall2.mesh.position = new BABYLON.Vector3(1.5, 4.5, 0);
+  pendulumBox.pendSideWall2.mesh.material = wallMaterial;
+
   pendulumBox.pendBottomWall.mesh = BABYLON.Mesh.CreateBox("pendBottomWall", 4, gameScene);
   pendulumBox.pendBottomWall.mesh.scaling = new BABYLON.Vector3(0.84, 0.1, 1);
   pendulumBox.pendBottomWall.mesh.position = new BABYLON.Vector3(0, 3.25, 0);
+  pendulumBox.pendBottomWall.mesh.material = wallMaterial;
+
+  var pendulumMaterial = new BABYLON.StandardMaterial("pendulum_material",gameScene);
+  pendulumMaterial.diffuseTexture = new BABYLON.Texture("./../../resources/textures/fire.png", gameScene);
 
   //create anchor point for pendulum
   pendulum.pendulumAnchor.mesh = BABYLON.Mesh.CreateSphere("pendulum_anchor", 16, 0.3, gameScene);
   pendulum.pendulumAnchor.mesh.position = new BABYLON.Vector3(0, 5.6, 0);
+  pendulum.pendulumAnchor.mesh.material = pendulumMaterial;
 
   pendulum.pendulumBall.mesh = BABYLON.Mesh.CreateSphere("pendulum_ball", 16, 0.3, gameScene);
   pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
+  pendulum.pendulumBall.mesh.material = pendulumMaterial;
 
   setupBlocks();
   setPaddleMovementLimit();
