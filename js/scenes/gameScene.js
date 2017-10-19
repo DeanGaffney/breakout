@@ -360,6 +360,7 @@ function clearPowerups(){
   });
 
   powerups.meshes.length = 0;
+  powerups.playersPowerups.length = 0;
 
   //object for powerups destroy them
   powerups = {
@@ -534,7 +535,7 @@ function setUpActionManager(gameScene){
           paddle.mesh.rotation.z += 0.01 * engine.getDeltaTime();  //rotate paddle
       }else if(evt.sourceEvent.key == "s"){
           paddle.mesh.rotation.z += -0.01 * engine.getDeltaTime(); //rotate the paddle
-      }else if(evt.sourceEvent.key == "r"){ //activate powerup
+      }else if(evt.sourceEvent.key == "r" && powerups.playersPowerups.length != 0){ //activate powerup
           activatePowerup(powerups.playersPowerups[0]);
       }else if(evt.sourceEvent.key == "e"){   //END OF GAME BUTTON TO DEMONSTRACTE PENDULUM BOX!!
           clearBlocks(false);
@@ -694,5 +695,5 @@ function updatePlayer(){
             powerupTimeLeftText.text = "Time: " + Math.floor(powerupTimer / 1000);
         }
     }
-    powerupText.text = (powerups.playersPowerups.length != 0) ? "Powerup: " + powerups.playersPowerups[0] : "None";
+    powerupText.text = (powerups.playersPowerups.length != 0) ? "Powerup: " + powerups.playersPowerups[0] : "Powerup: None";
 }
