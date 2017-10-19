@@ -62,6 +62,15 @@ var pendulumBoxOpen = false;
 var minPaddleDistance;
 var maxPaddleDistance;
 
+//GUI
+var gui;
+var scoreText;
+var powerupText;
+var blocksRemainingText;
+var powerupTimeLeftText;
+var rect1;
+var target;
+var line;
 
 /*-----------------------------------------------------------
 *                  gameScene SETUP
@@ -112,27 +121,6 @@ function initGameScene(){
   setUpActionManager(gameScene);
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 
-  var scoreTexture = new BABYLON.DynamicTexture("scoreTexture", 512, gameScene, true);
-  var scoreboard = BABYLON.Mesh.CreatePlane("scoreboard",10, gameScene);
-  // Position the scoreboard after the lane.
-  scoreboard.position.z = 40;
-  scoreboard.position.x = -19;
-  scoreboard.position.y = 8;
-  // Create a material for the scoreboard.
-  scoreboard.material = new BABYLON.StandardMaterial("scoradboardMat", gameScene);
-  // Set the diffuse texture to be the dynamic texture.
-  scoreboard.material.diffuseTexture = scoreTexture;
-
-  gameScene.registerBeforeRender(function() {
-    // Clear the canvas.
-    scoreTexture.clear();
-    // Draw the text using a white font on black background.
-    scoreTexture.drawText("Score:" + score, 40, 100 ,"bold 72px Calibri", "white", "black");
-    var currentPowerup = (powerups.playersPowerups.length != 0) ? powerups.playersPowerups[0] : "None";
-    scoreTexture.drawText("Powerup:" + currentPowerup, 80, 100 ,"bold 72px Arial", "white", "black");
-
-  });
-
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
         if(blocks.meshes.length != 0){
@@ -148,16 +136,94 @@ function initGameScene(){
         updateBall();
         updatePlayer();
     }else{
-      resetGameScene();
       Game.activeScene++;
       Game.gameStates.playing = false;
       Game.gameStates.gameOver = true;
+      resetGameScene();
     }
     this.render();
   }
     return gameScene;
 }
 
+function setupGameSceneGUI(){
+    //gui element
+    gui = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, gameScene);
+    //score
+    scoreText = new BABYLON.GUI.TextBlock();
+    scoreText.text = "Score: 0";
+    scoreText.color = "white";
+    scoreText.fontSize = 32;
+    scoreText.left = "20px";
+    scoreText.top = "10px";
+    scoreText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    scoreText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    gui.addControl(scoreText);
+
+    //powerup
+    powerupText = new BABYLON.GUI.TextBlock();
+    powerupText.text = "Powerup: None";
+    powerupText.color = "white";
+    powerupText.fontSize = 32;
+    powerupText.left = "20px";
+    powerupText.top = "10px";
+    powerupText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    powerupText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    powerupText.paddingTop = 40;
+    gui.addControl(powerupText);
+
+    //powerup time remaining
+    blocksRemainingText = new BABYLON.GUI.TextBlock();
+    blocksRemainingText.text = "Blocks: 0";
+    blocksRemainingText.color = "white";
+    blocksRemainingText.fontSize = 32;
+    blocksRemainingText.left = "20px";
+    blocksRemainingText.top = "10px";
+    blocksRemainingText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    blocksRemainingText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    blocksRemainingText.paddingTop = 80;
+    gui.addControl(blocksRemainingText);
+
+    //link timer to paddl mesh
+    powerupTimeLeftText = new BABYLON.GUI.TextBlock();
+    powerupTimeLeftText.text = "Time: " + powerupTimer;
+    powerupTimeLeftText.color = "white";
+    powerupTimeLeftText.alpha = 0;
+
+    //remianing powerup time
+    rect1 = new BABYLON.GUI.Rectangle();
+    rect1.width = 0.2;
+    rect1.height = "40px";
+    rect1.cornerRadius = 20;
+    rect1.color = "Orange";
+    rect1.thickness = 4;
+    rect1.background = "green";
+    gui.addControl(rect1);
+    rect1.linkWithMesh(paddle.mesh);
+    rect1.linkOffsetY = 150;
+    rect1.addControl(powerupTimeLeftText);
+    rect1.alpha = 0;
+
+    target = new BABYLON.GUI.Ellipse();
+    target.width = "40px";
+    target.height = "40px";
+    target.color = "Orange";
+    target.thickness = 4;
+    target.background = "green";
+    gui.addControl(target);
+    target.linkWithMesh(paddle.mesh);
+    target.alpha = 0;
+
+    line = new BABYLON.GUI.Line();
+    line.lineWidth = 4;
+    line.color = "Orange";
+    line.y2 = -20;
+    line.linkOffsetY = 20;
+    gui.addControl(line);
+    line.linkWithMesh(paddle.mesh);
+    line.connectedControl = rect1;
+    line.alpha = 0;
+}
 
 function clearObjects(){
     clearBlocks(true);
@@ -181,6 +247,19 @@ function clearObjects(){
     //destroy pendulum anchor
     pendulum.pendulumAnchor.mesh.dispose();
     pendulum.pendulumBall.mesh.dispose();
+
+    removeGUI();
+}
+
+function removeGUI(){
+    //remove gui elements
+    gui.removeControl(scoreText);
+    gui.removeControl(powerupText);
+    gui.removeControl(blocksRemainingText);
+    gui.removeControl(powerupTimeLeftText);
+    gui.removeControl(rect1);
+    gui.removeControl(target);
+    gui.removeControl(line);
 }
 
 
@@ -238,8 +317,8 @@ function setUpObjects(){
   setUpPendulum();
 
   pendulumBoxOpen = false;
-  // gameScene.activeCamera.position = new BABYLON.Vector3(0, 3, -20);
-  // gameScene.activeCamera.setTarget(BABYLON.Vector3.Zero());
+  setupGameSceneGUI();
+
 }
 
 function setupBlocks(){
@@ -500,6 +579,8 @@ function setPaddleMovementLimit(){
             blocks.vacancies[i] = true;   //update vacancy      *****THE BUG FOR POWERUP SPAWNING IS HERE AS POWER MESHES LENGTH IS DIFFERENT TO BLOCKS LENGTH!!!!****
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
             score += 100;
+            scoreText.text = "Score: " + score;
+            blocksRemainingText.text = "Blocks: " + blocks.meshes.length;
         }else{
             objects[i].rotation.y += 0.01;    //rotate the cube
         }
@@ -539,10 +620,19 @@ function canSpawnPowerup(index){
     powerups.powerupSpawnTime <= 0;
 }
 
+//turns the powerup gui timer on and off depending on its current state
+function togglePowerupTimerGUI(){
+    powerupTimeLeftText.alpha = (powerupTimeLeftText.alpha == 0) ? 1 : 0;
+    rect1.alpha = (rect1.alpha == 0) ? 1 : 0;
+    target.alpha = (target.alpha == 0) ? 1 : 0;
+    line.alpha = (line.alpha == 0) ? 1 : 0;
+}
+
 //activates a powerup
 function activatePowerup(powerup){
     if(!isUsingPowerup){        //turn powerup on
         isUsingPowerup = true;
+        togglePowerupTimerGUI();
         switch (powerup) {
             case "LONGER_PADDLE":
                 paddle.mesh.scaling.x += 1;
@@ -598,14 +688,11 @@ function updatePlayer(){
             powerupTimer = 6000;                        //reset to 6 seconds
             removePowerupEffect(powerups.playersPowerups[0]);
             powerups.playersPowerups.splice(0, 1);      //remove first index
+            togglePowerupTimerGUI();
         }else{
             powerupTimer -= engine.getDeltaTime();
+            powerupTimeLeftText.text = "Time: " + Math.floor(powerupTimer / 1000);
         }
     }
+    powerupText.text = (powerups.playersPowerups.length != 0) ? "Powerup: " + powerups.playersPowerups[0] : "None";
 }
-
-//add a block wider than the sphere radius to a distance joint on the sphere so players can hit the ball from straight under
-//add a replay function (reset function might suffice, maybe make an init function)
-//when all boxes have been destroyed a hinge joint lowers the side walls giving access to the end of game item.
-//if the ball gets within the box slow down time, resume normal speed when done
-//clamp camera rotation
