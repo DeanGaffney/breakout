@@ -112,17 +112,26 @@ function initGameScene(){
   setUpActionManager(gameScene);
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 
-  var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("splashScreenUI");
-  var container = new BABYLON.GUI.Container();
-  container.background = "blue";
+  var scoreTexture = new BABYLON.DynamicTexture("scoreTexture", 512, gameScene, true);
+  var scoreboard = BABYLON.Mesh.CreatePlane("scoreboard",10, gameScene);
+  // Position the scoreboard after the lane.
+  scoreboard.position.z = 40;
+  scoreboard.position.x = -19;
+  scoreboard.position.y = 8;
+  // Create a material for the scoreboard.
+  scoreboard.material = new BABYLON.StandardMaterial("scoradboardMat", gameScene);
+  // Set the diffuse texture to be the dynamic texture.
+  scoreboard.material.diffuseTexture = scoreTexture;
 
-  var scoreText = new BABYLON.GUI.TextBlock();
-  scoreText.text = score;
-  scoreText.color = "white";
-  scoreText.fontSize = 24;
-  container.addControl(scoreText);
+  gameScene.registerBeforeRender(function() {
+    // Clear the canvas.
+    scoreTexture.clear();
+    // Draw the text using a white font on black background.
+    scoreTexture.drawText("Score:" + score, 40, 100 ,"bold 72px Calibri", "white", "black");
+    var currentPowerup = (powerups.playersPowerups.length != 0) ? powerups.playersPowerups[0] : "None";
+    scoreTexture.drawText("Powerup:" + currentPowerup, 80, 100 ,"bold 72px Arial", "white", "black");
 
-  advancedTexture.addControl(container);
+  });
 
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
@@ -438,10 +447,10 @@ function setUpActionManager(gameScene){
       if(evt.sourceEvent.key == "a"){
           //clamp the paddle and camera within the game area
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + -0.01 * engine.getDeltaTime() * paddle.currentSpeed, minPaddleDistance, maxPaddleDistance);
-          gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * paddle.currentSpeed /2, minPaddleDistance, maxPaddleDistance);
+          //gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * paddle.currentSpeed /2, minPaddleDistance, maxPaddleDistance);
       }else if(evt.sourceEvent.key == "d"){
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed, minPaddleDistance, maxPaddleDistance);
-          gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed / 2, minPaddleDistance, maxPaddleDistance);
+          //gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed / 2, minPaddleDistance, maxPaddleDistance);
       }else if(evt.sourceEvent.key == "w"){
           paddle.mesh.rotation.z += 0.01 * engine.getDeltaTime();  //rotate paddle
       }else if(evt.sourceEvent.key == "s"){
