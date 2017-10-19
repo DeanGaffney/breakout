@@ -12,24 +12,27 @@ function createSplashScene(){
     // This attaches the camera to the canvas
     camera.attachControl(canvas, true);
 
-
     //set still camera as active camera
     splashScreen.activeCamera = camera;
-
-    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI");
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("splashScreenUI");
+    var container = new BABYLON.GUI.Container();
+    container.background = "blue";
 
     var playButton = BABYLON.GUI.Button.CreateSimpleButton("playButton", "PLAY!");
     playButton.width = 0.2;
     playButton.height = "40px";
     playButton.color = "white";
-    playButton.background = "red";
+    playButton.background = "green";
 
     playButton.onPointerUpObservable.add(function(info) {
       Game.activeScene++;   //increment scene number to GameScene
       Game.gameStates.gameStart = false;
       Game.gameStates.playing = true;
     });
-    advancedTexture.addControl(playButton);
+
+    container.addControl(playButton);
+
+    advancedTexture.addControl(container);
 
     splashScreen.renderLoop = function(){this.render();}
 

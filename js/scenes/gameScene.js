@@ -112,6 +112,18 @@ function initGameScene(){
   setUpActionManager(gameScene);
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 
+  var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("splashScreenUI");
+  var container = new BABYLON.GUI.Container();
+  container.background = "blue";
+
+  var scoreText = new BABYLON.GUI.TextBlock();
+  scoreText.text = score;
+  scoreText.color = "white";
+  scoreText.fontSize = 24;
+  container.addControl(scoreText);
+
+  advancedTexture.addControl(container);
+
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
         if(blocks.meshes.length != 0){
@@ -212,13 +224,11 @@ function setUpObjects(){
   pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
 
   setupBlocks();
-  setUpGameGUI();
   setPaddleMovementLimit();
   setUpPhysicsImposters();
   setUpPendulum();
 
   pendulumBoxOpen = false;
-
   // gameScene.activeCamera.position = new BABYLON.Vector3(0, 3, -20);
   // gameScene.activeCamera.setTarget(BABYLON.Vector3.Zero());
 }
