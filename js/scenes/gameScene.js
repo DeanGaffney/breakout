@@ -106,7 +106,8 @@ function initGameScene(){
   gameScene.activeCamera = camera;
 
   // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-  var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), gameScene);
+  var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, -1, 0), gameScene);
+  light.position = new BABYLON.Vector3(0, 0, 0);
 
   // Default intensity is 1. Let's dim the light a small amount
   light.intensity = 0.7;
@@ -129,6 +130,14 @@ function initGameScene(){
   //set up actions for gameScene
   setUpActionManager(gameScene);
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
+
+  //shadow generator
+  var shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+  shadowGenerator.useBlurExponentialShadowMap = true;
+  shadowGenerator.useKernelBlur = true;
+  shadowGenerator.blurKernel = 64;
+  shadowGenerator.getShadowMap().renderList.push(ball.mesh);        //add shadw map to ball
+  paddle.mesh.receiveShadows = true;                                //add shadow receiver to paddle
 
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
