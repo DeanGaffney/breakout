@@ -17,10 +17,10 @@ Breakout game remade with BabylonJS game engine and new improved features.
     - Sky box
     - Fog
     - Textured Walls
-    - Shader Generator to cast shadows on the paddle and walls
+    - Shadow Generator to cast shadows on the paddle and walls
   - Complex Physics Imposters
     - Ball collisions are dealt with by complex physic imposters which give the ball an appropriate linear velocity
-    - Area Walls have physic imposters to simulate a masss of 0 to allow the ball bounce back and forth
+    - Area Walls have physic imposters to simulate a mass of 0 to allow the ball bounce back and forth
     - Pendulum is a DistanceJoint which must be hit in order to win the game
     - Pendulum box explodes upon blocks being destroyed and a particle system is set off on the pendulum ball
   - Game States
