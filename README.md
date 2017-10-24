@@ -8,10 +8,10 @@ Breakout game remade with BabylonJS game engine and new improved features.
     - Splash Screen
     - Game Scene
     - Game Over Scene
-  - Patricle Systems
+  - Particle Systems
     - Ball
     - Pendulum ball
-  - Efficent Scene swapping
+  - Efficient Scene swapping
     - See main/main.js to see how scenes are swapped in a neat manner
   - Environment
     - Sky box

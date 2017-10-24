@@ -598,29 +598,41 @@ function setPaddleMovementLimit(){
 
 //updates breakable blocks
  function updateBlocks(){
-    updateCollisionObjects(blocks.meshes);
- }
-
-//updates powerups
- function updatePowerups(){
-     updateCollisionObjects(powerups.meshes)
- }
-
-//updates collision based objects (breakable blocks, powerups etc..)
- function updateCollisionObjects(objects){
-     for(var i = objects.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
-         if(ball.mesh.intersectsMesh(objects[i], true)){
-            objects[i].dispose();         //destroy the mesh
-            objects.splice(i, 1);         //update array size
+     for(var i = blocks.meshes.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
+         if(ball.mesh.intersectsMesh(blocks.meshes[i], true)){
+            blocks.meshes[i].dispose();         //destroy the mesh
+            blocks.meshes.splice(i, 1);         //update array size
             blocks.vacancies[i] = true;   //update vacancy      *****THE BUG FOR POWERUP SPAWNING IS HERE AS POWER MESHES LENGTH IS DIFFERENT TO BLOCKS LENGTH!!!!****
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
             score += 100;
             scoreText.text = "Score: " + score;
             blocksRemainingText.text = "Blocks: " + blocks.meshes.length;
         }else{
-            objects[i].rotation.y += 0.01;    //rotate the cube
+            blocks.meshes[i].rotation.y += 0.01;    //rotate the cube
         }
      }
+ }
+
+//updates powerups
+ function updatePowerups(){
+     for(var i = powerups.meshes.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
+         if(ball.mesh.intersectsMesh(powerups.meshes[i], true)){
+            const blockIndex = blocks.positions.some(function(ele, indx){return powerups.meshes[indx].position});             //find the block with the same position as the powerups
+            blocks.vacancies[blockIndex] = true;        //set this index to vacant
+            powerups.meshes[i].dispose();         //destroy the mesh
+            powerups.meshes.splice(i, 1);         //update array size
+            ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
+            score += 100;
+            scoreText.text = "Score: " + score;
+        }else{
+            powerups.meshes[i].rotation.y += 0.01;    //rotate the cube
+        }
+     }
+ }
+
+//updates collision based objects (breakable blocks, powerups etc..)
+ function updateCollisionObjects(objects){
+
  }
 
 //spawns a powerup, gives a 1 in 10 chance of a powerup being spawned
