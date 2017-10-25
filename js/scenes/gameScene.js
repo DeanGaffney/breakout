@@ -101,7 +101,6 @@ function initGameScene(){
   // This attaches the camera to the canvas
   camera.attachControl(canvas, true);
 
-
   //set still camera as active camera
   gameScene.activeCamera = camera;
 
@@ -346,6 +345,8 @@ function setUpObjects(){
   pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
   pendulum.pendulumBall.mesh.material = pendulumMaterial;
 
+  // gameScene.activeCamera.setTarget(BABYLON.Vector3.Zero());
+
   setupBlocks();
   setPaddleMovementLimit();
   setUpPhysicsImposters();
@@ -562,17 +563,17 @@ function setUpActionManager(gameScene){
       if(evt.sourceEvent.key == "a"){
           //clamp the paddle and camera within the game area
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + -0.01 * engine.getDeltaTime() * paddle.currentSpeed, minPaddleDistance, maxPaddleDistance);
-          //gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * paddle.currentSpeed /2, minPaddleDistance, maxPaddleDistance);
+          gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + -0.01 * engine.getDeltaTime() * paddle.currentSpeed /2, minPaddleDistance, maxPaddleDistance);
       }else if(evt.sourceEvent.key == "d"){
           paddle.mesh.position.x = BABYLON.MathTools.Clamp(paddle.mesh.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed, minPaddleDistance, maxPaddleDistance);
-          //gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed / 2, minPaddleDistance, maxPaddleDistance);
+          gameScene.activeCamera.position.x = BABYLON.MathTools.Clamp(gameScene.activeCamera.position.x + 0.01 * engine.getDeltaTime() * paddle.currentSpeed / 2, minPaddleDistance, maxPaddleDistance);
       }else if(evt.sourceEvent.key == "w"){
           paddle.mesh.rotation.z += 0.01 * engine.getDeltaTime();  //rotate paddle
       }else if(evt.sourceEvent.key == "s"){
           paddle.mesh.rotation.z += -0.01 * engine.getDeltaTime(); //rotate the paddle
       }else if(evt.sourceEvent.key == "r" && powerups.playersPowerups.length != 0){ //activate powerup
           activatePowerup(powerups.playersPowerups[0]);
-      }else if(evt.sourceEvent.key == "e"){   //END OF GAME BUTTON TO DEMONSTRACTE PENDULUM BOX!!
+      }else if(evt.sourceEvent.key == "e"){   //END OF GAME BUTTON TO DEMONSTRATE PENDULUM BOX!!
           clearBlocks(false);
           blocks.meshes.length = 0;
       }
@@ -630,10 +631,6 @@ function setPaddleMovementLimit(){
      }
  }
 
-//updates collision based objects (breakable blocks, powerups etc..)
- function updateCollisionObjects(objects){
-
- }
 
 //spawns a powerup, gives a 1 in 10 chance of a powerup being spawned
 function spawnPowerup(){
@@ -641,7 +638,6 @@ function spawnPowerup(){
         for(var j = 0; j < 8; j++){
             var index = i+j;
             if(canSpawnPowerup(index)){    //if there is a vacancy and you fall within the chance range
-                console.log("spawned powerup at index:" + index + "\nvacant:" + blocks.vacancies[index]);
                 blocks.vacancies[index] = false;        //space is no longer vacant
                 var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
                 powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
