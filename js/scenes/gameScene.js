@@ -62,6 +62,8 @@ var pendulumBoxOpen = false;
 var minPaddleDistance;
 var maxPaddleDistance;
 
+var moneky;
+
 //GUI
 var gui;
 var scoreText;
@@ -130,13 +132,17 @@ function initGameScene(){
   setUpActionManager(gameScene);
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 
-  // //shadow generator
-  // var shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
-  // shadowGenerator.useBlurExponentialShadowMap = true;
-  // shadowGenerator.useKernelBlur = true;
-  // shadowGenerator.blurKernel = 64;
-  // shadowGenerator.getShadowMap().renderList.push(ball.mesh);        //add shadw map to ball
-  // paddle.mesh.receiveShadows = true;                                //add shadow receiver to paddle
+  var loader = new BABYLON.AssetsManager(gameScene);
+  var monekyLoader = loader.addMeshTask("monkey", "", "./../resources/models/", "monkey_head.obj");
+  monekyLoader.onSuccess = function(meshes) {
+    moneky = meshes.loadedMeshes[0];
+    moneky.scaling.x = 2;
+    moneky.scaling.y = 2;
+    moneky.scaling.z = 2;
+    moneky.position = new BABYLON.Vector3(0,0,0);
+  };
+
+  loader.load();
 
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
