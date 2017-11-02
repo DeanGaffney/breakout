@@ -406,11 +406,12 @@ function clearPowerups(){
 
   //object for powerups destroy them
   powerups = {
+      powerupSpawnTime: 4000,
       activePowerups: 0,      //total powerups made in the game life
       meshes: [],             //powerup meshes currently in the gameScene
       positions: [],          //position of the powerup meshes in the gameScene (Vec3)
       playersPowerups: [],    //the players powerup inventory
-      types: ["LONGER_PADDLE", "SLOW_MOTION", "BIGGER_BALL"]      //types of powerups available
+      types: ["LONGER_PADDLE", "SLOW_MOTION", "SPEED_UP"]      //types of powerups available
   };
 }
 
