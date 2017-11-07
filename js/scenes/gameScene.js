@@ -80,6 +80,8 @@ var backgroundSound;
 var powerupSound;
 var powerupDeactivateSound;
 var pendBoxSound;
+var winSound;
+var loseSound;
 
 /*-----------------------------------------------------------
 *                  GAME SCENE SETUP
@@ -145,6 +147,8 @@ function initGameScene(){
   powerupSound = new BABYLON.Sound("powerupSound", "./../../resources/sounds/powerup.wav", gameScene, null , {loop: false, autoplay: false});
   powerupDeactivateSound = new BABYLON.Sound("powerupDeactivateSound", "./../../resources/sounds/powerup_deactivate.wav", gameScene, null , {loop: false, autoplay: false});
   pendBoxSound = new BABYLON.Sound("pendBoxSound", "./../../resources/sounds/pend_box_explosion.wav", gameScene, null , {loop: false, autoplay: false});
+  winSound = new BABYLON.Sound("winSound", "./../../resources/sounds/win.wav", gameScene, null , {loop: false, autoplay: false});
+  loseSound = new BABYLON.Sound("winSound", "./../../resources/sounds/lose.wav", gameScene, null , {loop: false, autoplay: false});
 
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
@@ -468,6 +472,7 @@ function setUpPhysicsImposters(){
   });
 
   ball.mesh.physicsImpostor.registerOnPhysicsCollide(pendulum.pendulumBall.mesh.physicsImpostor, function(main, collided) {
+      winSound.play();
       ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
       Game.gameStates.gameOver = true;
   });
@@ -732,6 +737,7 @@ function removePowerupEffect(powerup){
 //updats the ball object
 function updateBall(){
     if(ball.mesh.position.y < -10){     //ball has fallen out of game area
+        loseSound.play();
         Game.gameStates.gameOver = true;
     }
     if(Math.floor(ball.mesh.physicsImpostor.getLinearVelocity().x) == 0){
