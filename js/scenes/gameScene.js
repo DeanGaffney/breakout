@@ -645,7 +645,7 @@ function spawnPowerup(){
     var index = 0;
     for(var i =0; i < 3; i++){
         for(var j = 0; j < 8; j++){
-            if(canSpawnPowerup(index)){    //if there is a vacancy and you fall within the chance range
+            if(canSpawnPowerup()){    //if there is a vacancy and you fall within the chance range
                 var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
                 powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
                 powerup.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/bloc.jpg", gameScene);
@@ -664,7 +664,7 @@ function spawnPowerup(){
 
 //returns true if can the space is vacant, the chance is less than 2,
 //there are less than 3 powerups already present and the spawn time is less than 0, false otherwise
-function canSpawnPowerup(index){
+function canSpawnPowerup(){
     return  blocks.vacancies.length != 0        &&
     Math.floor(getRandomNumber(1, 10))  <= 3    &&
     powerups.meshes.length < 3                  &&
