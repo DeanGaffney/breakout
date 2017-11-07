@@ -58,3 +58,5 @@ Breakout game remade with BabylonJS game engine and new improved features.
     - Background sound track
     - Powerup Sound
     - Explosion Sound
+- High Scores
+    - High scores persisted on the server, client sends data using jquery ajax function, and can request server scores with ajax too

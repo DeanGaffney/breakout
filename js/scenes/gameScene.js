@@ -52,6 +52,10 @@ var powerups = {
     types: ["LONGER_PADDLE", "SLOW_MOTION", "SPEED_UP"]      //types of powerups available
 };
 
+var scores = {
+    highScores: []
+};
+
 const DEFAULT_STEP_TIME = 1/240;
 const SLOW_MOTION_STEP_TIME = 1/480;
 
@@ -473,6 +477,7 @@ function setUpPhysicsImposters(){
 
   ball.mesh.physicsImpostor.registerOnPhysicsCollide(pendulum.pendulumBall.mesh.physicsImpostor, function(main, collided) {
       winSound.play();
+      saveScore();
       ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
       Game.gameStates.gameOver = true;
   });
@@ -738,6 +743,7 @@ function removePowerupEffect(powerup){
 function updateBall(){
     if(ball.mesh.position.y < -10){     //ball has fallen out of game area
         loseSound.play();
+        saveScore();
         Game.gameStates.gameOver = true;
     }
     if(Math.floor(ball.mesh.physicsImpostor.getLinearVelocity().x) == 0){
@@ -760,4 +766,13 @@ function updatePlayer(){
         }
     }
     powerupText.text = (powerups.playersPowerups.length != 0) ? "Powerup: " + powerups.playersPowerups[0] : "Powerup: None";
+}
+
+function saveScore(){
+    $.ajax({
+        type: "POST",
+        url: "/scores",
+        contentType: "application/json; charset=utf-8",
+        data: JSON.stringify({score: score})
+    });
 }
