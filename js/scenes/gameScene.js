@@ -641,9 +641,9 @@ function setPaddleMovementLimit(){
 
 //spawns a powerup, gives a 1 in 10 chance of a powerup being spawned
 function spawnPowerup(){
+    var index = 0;
     for(var i =0; i < 3; i++){
         for(var j = 0; j < 8; j++){
-            var index = i+j;
             if(canSpawnPowerup(index)){    //if there is a vacancy and you fall within the chance range
                 blocks.vacancies[index] = false;        //space is no longer vacant
                 var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
@@ -652,12 +652,11 @@ function spawnPowerup(){
                 powerup.position = blocks.positions[index];     //set the power up position to that of the vacant space
                 powerups.meshes.splice(index, 0, powerup);              //push the powerup mesh to its array
                 powerups.powerupSpawnTime = 4;              //reset the spawn time
-                if(powerups.playersPowerups.length < 3){    //max of 3 powerups for player
-                    powerups.playersPowerups.splice(index, 0, powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
-                }
+                powerups.playersPowerups.splice(index, 0, powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
             }else{
                 powerups.powerupSpawnTime -= engine.getDeltaTime();
             }
+            index++;
         }
     }
 }
@@ -665,9 +664,10 @@ function spawnPowerup(){
 //returns true if can the space is vacant, the chance is less than 2,
 //there are less than 3 powerups already present and the spawn time is less than 0, false otherwise
 function canSpawnPowerup(index){
-    return blocks.vacancies[index]   &&
+    return blocks.vacancies[index]              &&
     Math.floor(getRandomNumber(1, 10))  <= 3    &&
-    powerups.meshes.length < 3              &&
+    powerups.meshes.length < 3                  &&
+    powerups.playersPowerups.length < 3         &&
     powerups.powerupSpawnTime <= 0;
 }
 
@@ -738,7 +738,7 @@ function updatePlayer(){
             isUsingPowerup = false;
             powerupTimer = 6000;                        //reset to 6 seconds
             removePowerupEffect(powerups.playersPowerups[0]);
-            powerups.playersPowerups.splice(0, 1);      //remove first index
+            powerups.shift();      //remove first index
             togglePowerupTimerGUI();
         }else{
             powerupTimer -= engine.getDeltaTime();
