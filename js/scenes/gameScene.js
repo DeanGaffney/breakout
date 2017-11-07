@@ -666,8 +666,8 @@ function spawnPowerup(){
 //there are less than 3 powerups already present and the spawn time is less than 0, false otherwise
 function canSpawnPowerup(index){
     return blocks.vacancies[index]              &&
-    powerups.meshes[index] !== undefined        &&
-    blocks.meshes[index] !== undefined          &&
+    powerups.meshes[index] === undefined        &&
+    blocks.meshes[index] === undefined          &&
     Math.floor(getRandomNumber(1, 10))  <= 3    &&
     powerups.meshes.length < 3                  &&
     powerups.playersPowerups.length < 3         &&
