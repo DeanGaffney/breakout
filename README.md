@@ -52,3 +52,9 @@ Breakout game remade with BabylonJS game engine and new improved features.
         - Powerup time remaining when a powerup is activated, which follows the paddle
     - Game Over Screen
         - Replay
+        - High Scores being written to server for storage
+- Sounds
+    - Blip sound for collisions
+    - Background sound track
+    - Powerup Sound
+    - Explosion Sound

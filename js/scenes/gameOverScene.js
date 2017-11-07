@@ -30,6 +30,10 @@ function createGameOverScene(gameState){
     Game.gameStates.gameOver = false;
     Game.activeScene = 1;
   });
+
+  var backgroundImage = new BABYLON.GUI.Image("backgroundImage", "./../../resources/textures/background.png");
+
+  advancedTexture.addControl(backgroundImage);
   advancedTexture.addControl(replayButton);
 
   gameOverScreen.renderLoop = function(){this.render();}

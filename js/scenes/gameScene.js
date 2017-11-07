@@ -40,6 +40,8 @@ var blocks = {
     vacancies: []           //boolean array indicating if an index in the meshses array is free for a potential powerup
 };
 
+var vacancy = null;         //starts at null to avoid powerup being spawned on scene start
+
 //object for powerups
 var powerups = {
     powerupSpawnTime: 4000,
@@ -62,8 +64,6 @@ var pendulumBoxOpen = false;
 var minPaddleDistance;
 var maxPaddleDistance;
 
-var moneky;
-
 //GUI
 var gui;
 var scoreText;
@@ -74,8 +74,15 @@ var rect1;
 var target;
 var line;
 
+//sounds
+var blipSound;
+var backgroundSound;
+var powerupSound;
+var powerupDeactivateSound;
+var pendBoxSound;
+
 /*-----------------------------------------------------------
-*                  gameScene SETUP
+*                  GAME SCENE SETUP
 * ---------------------------------------------------------*/
 
 function createGameScene() {
@@ -132,20 +139,12 @@ function initGameScene(){
   setUpActionManager(gameScene);
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 
-  // var loader = new BABYLON.AssetsManager(gameScene);
-  // var monekyLoader = loader.addMeshTask("monkey", "", "./../../resources/models/", "monkey_head.obj");
-  // monekyLoader.onSuccess = function(meshes) {
-  //   moneky = meshes.loadedMeshes[0];
-  //   moneky.scaling.x = 2;
-  //   moneky.scaling.y = 2;
-  //   moneky.scaling.z = 2;
-  //   moneky.position = new BABYLON.Vector3(0,0,0);
-  // };
-  //
-  // loader.load();
-
-  var blipSound = new BABYLON.Sound("blipsound", "./../../resources/sounds/blip.wav", gameScene, null , {loop:true, autoplay:true});
-
+  //setup sounds
+  blipSound = new BABYLON.Sound("blipsound", "./../../resources/sounds/blip.wav", gameScene, null , {loop: false, autoplay: false});
+  backgroundSound = new BABYLON.Sound("blipsound", "./../../resources/sounds/background.mp3", gameScene, null , {loop: true, autoplay: true});
+  powerupSound = new BABYLON.Sound("powerupSound", "./../../resources/sounds/powerup.wav", gameScene, null , {loop: false, autoplay: false});
+  powerupDeactivateSound = new BABYLON.Sound("powerupDeactivateSound", "./../../resources/sounds/powerup_deactivate.wav", gameScene, null , {loop: false, autoplay: false});
+  pendBoxSound = new BABYLON.Sound("pendBoxSound", "./../../resources/sounds/pend_box_explosion.wav", gameScene, null , {loop: false, autoplay: false});
 
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
@@ -249,6 +248,7 @@ function setupGameSceneGUI(){
     line.linkWithMesh(paddle.mesh);
     line.connectedControl = rect1;
     line.alpha = 0;
+
 }
 
 function clearObjects(){
@@ -354,7 +354,7 @@ function setUpObjects(){
   pendulum.pendulumBall.mesh.position = new BABYLON.Vector3(0, 4.5, 0);
   pendulum.pendulumBall.mesh.material = pendulumMaterial;
 
-  // gameScene.activeCamera.setTarget(BABYLON.Vector3.Zero());
+  vacancy = null;
 
   setupBlocks();
   setPaddleMovementLimit();
@@ -489,6 +489,7 @@ function updatePendulum(){
 }
 
 function openPendulumBox(){
+    pendBoxSound.play();
     //start particle system
     addParticleSystemTo(pendulum.pendulumBall.mesh, new BABYLON.Color4(0.1, 0.8, 0.1, 1.0), new BABYLON.Color4(0.1, 0.8, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 
@@ -611,10 +612,11 @@ function setPaddleMovementLimit(){
  function updateBlocks(){
      for(var i = blocks.meshes.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
          if(ball.mesh.intersectsMesh(blocks.meshes[i], true)){
+             blipSound.play();
             var blockPos = blocks.meshes[i].position;
             blocks.meshes[i].dispose();         //destroy the mesh
             blocks.meshes.splice(i, 1);         //update array size
-            blocks.vacancies = [blockPos];      //set the block position as a possible powerup spawn point
+            vacancy = blockPos;      //set the block position as a possible powerup spawn point
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
             score += 100;
             scoreText.text = "Score: " + score;
@@ -629,8 +631,8 @@ function setPaddleMovementLimit(){
  function updatePowerups(){
      for(var i = powerups.meshes.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
          if(ball.mesh.intersectsMesh(powerups.meshes[i], true)){
-            var powerupPos = powerups.meshes[i].position;
-            blocks.vacancies = [powerupPos];
+            blipSound.play();
+            vacancy = powerups.meshes[i].position;
             powerups.meshes[i].dispose();         //destroy the mesh
             powerups.meshes.splice(i, 1);         //update array size
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
@@ -652,8 +654,8 @@ function spawnPowerup(){
                 var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
                 powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
                 powerup.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/bloc.jpg", gameScene);
-                powerup.position = blocks.vacancies[0];     //set the power up position to that of the vacant space
-                blocks.vacancies.length = 0;
+                powerup.position = vacancy;     //set the power up position to that of the vacant space
+                vacancy = null;
                 powerups.meshes.splice(index, 0, powerup);              //push the powerup mesh to its array
                 powerups.powerupSpawnTime = 4;              //reset the spawn time
                 powerups.playersPowerups.splice(index, 0, powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
@@ -668,7 +670,7 @@ function spawnPowerup(){
 //returns true if can the space is vacant, the chance is less than 2,
 //there are less than 3 powerups already present and the spawn time is less than 0, false otherwise
 function canSpawnPowerup(){
-    return  blocks.vacancies.length != 0        &&
+    return vacancy != null                      &&
     Math.floor(getRandomNumber(1, 10))  <= 3    &&
     powerups.meshes.length < 3                  &&
     powerups.playersPowerups.length < 3         &&
@@ -686,6 +688,7 @@ function togglePowerupTimerGUI(){
 //activates a powerup
 function activatePowerup(powerup){
     if(!isUsingPowerup){        //turn powerup on
+        powerupSound.play();
         isUsingPowerup = true;
         togglePowerupTimerGUI();
         switch (powerup) {
@@ -708,6 +711,7 @@ function activatePowerup(powerup){
 }
 
 function removePowerupEffect(powerup){
+    powerupDeactivateSound.play();
     switch(powerup){
         case "LONGER_PADDLE":
             paddle.mesh.scaling.x -= 1;
@@ -742,7 +746,7 @@ function updatePlayer(){
             isUsingPowerup = false;
             powerupTimer = 6000;                        //reset to 6 seconds
             removePowerupEffect(powerups.playersPowerups[0]);
-            powerups.shift();      //remove first index
+            powerups.playersPowerups.shift();      //remove first index from player powerups
             togglePowerupTimerGUI();
         }else{
             powerupTimer -= engine.getDeltaTime();

@@ -16,7 +16,6 @@ function createSplashScene(){
     splashScreen.activeCamera = camera;
     var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("splashScreenUI");
     var container = new BABYLON.GUI.Container();
-    container.background = "blue";
 
     var playButton = BABYLON.GUI.Button.CreateSimpleButton("playButton", "PLAY!");
     playButton.width = 0.2;
@@ -30,6 +29,9 @@ function createSplashScene(){
       Game.gameStates.playing = true;
     });
 
+    var backgroundImage = new BABYLON.GUI.Image("backgroundImage", "./../../resources/textures/background.png");
+
+    container.addControl(backgroundImage);
     container.addControl(playButton);
 
     advancedTexture.addControl(container);
