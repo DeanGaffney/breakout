@@ -374,7 +374,6 @@ function setupBlocks(){
           block.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/albedo.png", gameScene);
           blocks.meshes.splice(index, 0, block);   //add block to blocks array for later collision detection
           blocks.positions.splice(index, 0, block.position);
-          blocks.vacancies.splice(index, 0 , false);
           index++;
       }
   }
@@ -609,9 +608,10 @@ function setPaddleMovementLimit(){
  function updateBlocks(){
      for(var i = blocks.meshes.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
          if(ball.mesh.intersectsMesh(blocks.meshes[i], true)){
+            var blockPos = blocks.meshes[i].position;
             blocks.meshes[i].dispose();         //destroy the mesh
             blocks.meshes.splice(i, 1);         //update array size
-            blocks.vacancies[i] = true;   //update vacancy      *****THE BUG FOR POWERUP SPAWNING IS HERE AS POWER MESHES LENGTH IS DIFFERENT TO BLOCKS LENGTH!!!!****
+            blocks.vacancies = [blockPos];
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
             score += 100;
             scoreText.text = "Score: " + score;
@@ -626,8 +626,8 @@ function setPaddleMovementLimit(){
  function updatePowerups(){
      for(var i = powerups.meshes.length - 1; i >= 0; i--){ //must loop backwards due to splicing, splicing re indexs the array, meaning reverse iteration is safe
          if(ball.mesh.intersectsMesh(powerups.meshes[i], true)){
-            const blockIndex = blocks.positions.some(function(ele, indx){return powerups.meshes[indx].position});             //find the block with the same position as the powerups
-            blocks.vacancies[blockIndex] = true;        //set this index to vacant
+            var powerupPos = powerups.meshes[i].position;
+            blocks.vacancies = [powerupPos];
             powerups.meshes[i].dispose();         //destroy the mesh
             powerups.meshes.splice(i, 1);         //update array size
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
@@ -646,11 +646,10 @@ function spawnPowerup(){
     for(var i =0; i < 3; i++){
         for(var j = 0; j < 8; j++){
             if(canSpawnPowerup(index)){    //if there is a vacancy and you fall within the chance range
-                blocks.vacancies[index] = false;        //space is no longer vacant
                 var powerup = BABYLON.Mesh.CreateBox("powerup_" + powerups.activePowerups++, 0.5, gameScene, false);
                 powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
                 powerup.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/bloc.jpg", gameScene);
-                powerup.position = blocks.positions[index];     //set the power up position to that of the vacant space
+                powerup.position = blocks.vacancies[0];     //set the power up position to that of the vacant space
                 powerups.meshes.splice(index, 0, powerup);              //push the powerup mesh to its array
                 powerups.powerupSpawnTime = 4;              //reset the spawn time
                 powerups.playersPowerups.splice(index, 0, powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
@@ -665,9 +664,7 @@ function spawnPowerup(){
 //returns true if can the space is vacant, the chance is less than 2,
 //there are less than 3 powerups already present and the spawn time is less than 0, false otherwise
 function canSpawnPowerup(index){
-    return blocks.vacancies[index]              &&
-    powerups.meshes[index] === undefined        &&
-    blocks.meshes[index] === undefined          &&
+    return  blocks.vacancies.length != 0        &&
     Math.floor(getRandomNumber(1, 10))  <= 3    &&
     powerups.meshes.length < 3                  &&
     powerups.playersPowerups.length < 3         &&
