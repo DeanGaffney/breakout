@@ -650,6 +650,7 @@ function spawnPowerup(){
                 powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
                 powerup.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/bloc.jpg", gameScene);
                 powerup.position = blocks.vacancies[0];     //set the power up position to that of the vacant space
+                block.vacancies.length = 0;
                 powerups.meshes.splice(index, 0, powerup);              //push the powerup mesh to its array
                 powerups.powerupSpawnTime = 4;              //reset the spawn time
                 powerups.playersPowerups.splice(index, 0, powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
