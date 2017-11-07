@@ -132,17 +132,20 @@ function initGameScene(){
   setUpActionManager(gameScene);
   addParticleSystemTo(ball.mesh, new BABYLON.Color4(0.7, 0.8, 1.0, 1.0), new BABYLON.Color4(0.2, 0.5, 1.0, 1.0), new BABYLON.Color4(0, 0, 0.2, 0.0), gameScene);
 
-  var loader = new BABYLON.AssetsManager(gameScene);
-  var monekyLoader = loader.addMeshTask("monkey", "", "./../resources/models/", "monkey_head.obj");
-  monekyLoader.onSuccess = function(meshes) {
-    moneky = meshes.loadedMeshes[0];
-    moneky.scaling.x = 2;
-    moneky.scaling.y = 2;
-    moneky.scaling.z = 2;
-    moneky.position = new BABYLON.Vector3(0,0,0);
-  };
+  // var loader = new BABYLON.AssetsManager(gameScene);
+  // var monekyLoader = loader.addMeshTask("monkey", "", "./../../resources/models/", "monkey_head.obj");
+  // monekyLoader.onSuccess = function(meshes) {
+  //   moneky = meshes.loadedMeshes[0];
+  //   moneky.scaling.x = 2;
+  //   moneky.scaling.y = 2;
+  //   moneky.scaling.z = 2;
+  //   moneky.position = new BABYLON.Vector3(0,0,0);
+  // };
+  //
+  // loader.load();
 
-  loader.load();
+  var blipSound = new BABYLON.Sound("blipsound", "./../../resources/sounds/blip.wav", gameScene, null , {loop:true, autoplay:true});
+
 
   gameScene.renderLoop = function(){
     if(!Game.gameStates.gameOver){
@@ -611,7 +614,7 @@ function setPaddleMovementLimit(){
             var blockPos = blocks.meshes[i].position;
             blocks.meshes[i].dispose();         //destroy the mesh
             blocks.meshes.splice(i, 1);         //update array size
-            blocks.vacancies = [blockPos];
+            blocks.vacancies = [blockPos];      //set the block position as a possible powerup spawn point
             ball.mesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ball.mesh.physicsImpostor.getLinearVelocity().x, -ball.mesh.physicsImpostor.getLinearVelocity().y, 0));
             score += 100;
             scoreText.text = "Score: " + score;
@@ -650,7 +653,7 @@ function spawnPowerup(){
                 powerup.material = new BABYLON.StandardMaterial("powerup_material", gameScene);
                 powerup.material.diffuseTexture = new BABYLON.Texture("./../../resources/textures/bloc.jpg", gameScene);
                 powerup.position = blocks.vacancies[0];     //set the power up position to that of the vacant space
-                block.vacancies.length = 0;
+                blocks.vacancies.length = 0;
                 powerups.meshes.splice(index, 0, powerup);              //push the powerup mesh to its array
                 powerups.powerupSpawnTime = 4;              //reset the spawn time
                 powerups.playersPowerups.splice(index, 0, powerups.types[Math.floor(Math.random()*powerups.types.length)]); //get a random powerup type, and assign it to the player
@@ -707,7 +710,7 @@ function activatePowerup(powerup){
 function removePowerupEffect(powerup){
     switch(powerup){
         case "LONGER_PADDLE":
-            paddle.mesh.scaling = paddle.originalScale;
+            paddle.mesh.scaling.x -= 1;
             //reset the physics imposter to match the change in the mesh
             paddle.mesh.physicsImpostor = new BABYLON.PhysicsImpostor(paddle.mesh, BABYLON.PhysicsImpostor.BoxImpostor, {mass: 0, restitution: 1}, gameScene);
             setPaddleMovementLimit();

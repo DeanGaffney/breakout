@@ -3,6 +3,7 @@
 Breakout game remade with BabylonJS game engine and new improved features.
 
 # Features
+  - NodeJs Server with Nodemon restart functionality
   - Framework
     - The BabylonJS framework was used rather than the playground
   - 3 Game Scenes
