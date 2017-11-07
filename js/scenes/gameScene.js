@@ -365,9 +365,9 @@ function setUpObjects(){
 
 function setupBlocks(){
   //create blocks
+  var index = 0;
   for(var i = 0; i < 3; i++){
       for(var j = 0; j < 8; j++){
-          var index = i + j;
           var block = BABYLON.Mesh.CreateBox("block_" + blocks.activeBlocks++, 0.5, gameScene, false);
           block.position = new BABYLON.Vector3(-3 + j, 2.5 - i, 0);
           block.material = new BABYLON.StandardMaterial("block_material", gameScene);
@@ -375,6 +375,7 @@ function setupBlocks(){
           blocks.meshes.splice(index, 0, block);   //add block to blocks array for later collision detection
           blocks.positions.splice(index, 0, block.position);
           blocks.vacancies.splice(index, 0 , false);
+          index++;
       }
   }
 }
@@ -665,6 +666,8 @@ function spawnPowerup(){
 //there are less than 3 powerups already present and the spawn time is less than 0, false otherwise
 function canSpawnPowerup(index){
     return blocks.vacancies[index]              &&
+    powerups.meshes[index] !== undefined        &&
+    blocks.meshes[index] !== undefined          &&
     Math.floor(getRandomNumber(1, 10))  <= 3    &&
     powerups.meshes.length < 3                  &&
     powerups.playersPowerups.length < 3         &&
